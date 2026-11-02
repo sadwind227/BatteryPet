@@ -6,6 +6,9 @@ These are local development milestones, not previously published GitHub releases
 
 ## [0.4.1] - 2026-11-02
 
+### Changed / 改进
+- Replaced the optional third-party character preview with a maintainer-supplied sample pet. / 将可选第三方角色预览替换为维护者提供的示例桌宠。
+
 ### Fixed / 修复
 - Constrain movement while dragging, including negative-coordinate monitors. / 拖动中实时限制工作区边界，兼容负坐标副屏。
 - Correct and save position after interrupted mouse capture. / 拖动中断时校正并保存位置。

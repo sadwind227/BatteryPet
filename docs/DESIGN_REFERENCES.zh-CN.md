@@ -11,6 +11,6 @@
 
 ## 0.3.0 可选示例素材
 
-新增随附的 Coopanion 静态形象预览图，位置为 `Examples/Coopanion/deepseek.png`，保持上游原图，保留原包 AGPL-3.0 许可证、署名与来源链接，详见同目录 `SOURCE.md` 和 `LICENSE.txt`。这是可选导入素材，不包含 Coopanion 的代码、骨骼与完整角色包。前文所述 0.2.0 实现仍为独立绘制的默认角色。
+0.3.0 开发期间曾加入 Coopanion 静态形象预览图作为可选素材。该素材已在首次公开版本发布前移除，当前随附角色改为项目维护者提供的像素风鲸鱼女仆图片，见 `Examples/CustomPet/SOURCE.md`。默认角色仍是 BatteryPet 自绘小鲸鱼。
 
 DeepSeek-Balance-Whale-Widget 的 PROVENANCE.md 明确将 assets 限定为运行原插件使用，因此本版未复制其图片与音效；内置轻触音由本程序合成。
