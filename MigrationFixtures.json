@@ -1,0 +1,92 @@
+[
+  {
+    "adapter": {
+      "schema_version": 1,
+      "name": "Test mouse",
+      "kind": "hid_feature",
+      "device": {
+        "vid": "1234",
+        "pid": "5678",
+        "usage_page": 65280,
+        "usage": 2
+      },
+      "report": {
+        "id": 9,
+        "length": 4,
+        "battery_offset": 2,
+        "scale_num": 1,
+        "scale_den": 1,
+        "charge_offset": 3,
+        "charge_mask": 1
+      },
+      "evidence": [
+        {
+          "source_id": "ev-test",
+          "reason": "fixture evidence"
+        }
+      ],
+      "notes": "A candidate, not verified."
+    },
+    "fingerprint": "77788e0df183759d36fd56d03bddaf604f6e963b86e9b2d07e89be5f2ccb95c4"
+  },
+  {
+    "adapter": {
+      "schema_version": 1,
+      "name": "鲸鱼 \"电量\"\\路径\n🐳",
+      "kind": "hid_feature",
+      "device": {
+        "vid": "1234",
+        "pid": "5678",
+        "usage_page": 65280,
+        "usage": 2
+      },
+      "report": {
+        "id": 9,
+        "length": 4,
+        "battery_offset": 2,
+        "scale_num": 1,
+        "scale_den": 1,
+        "charge_offset": 3,
+        "charge_mask": 1
+      },
+      "evidence": [
+        {
+          "source_id": "ev-test",
+          "reason": "fixture evidence"
+        }
+      ],
+      "notes": "A candidate, not verified."
+    },
+    "fingerprint": "2e6cc01536de88885c46f388f14114f54a3ede8fde603d29f606fe24d55444d5"
+  },
+  {
+    "adapter": {
+      "schema_version": 1,
+      "name": "特殊\t\b\u0001",
+      "kind": "hid_feature",
+      "device": {
+        "vid": "1234",
+        "pid": "5678",
+        "usage_page": 65280,
+        "usage": 2
+      },
+      "report": {
+        "id": 9,
+        "length": 4,
+        "battery_offset": 2,
+        "scale_num": 1,
+        "scale_den": 1,
+        "charge_offset": 3,
+        "charge_mask": 1
+      },
+      "evidence": [
+        {
+          "source_id": "ev-test",
+          "reason": "fixture evidence"
+        }
+      ],
+      "notes": "A candidate, not verified."
+    },
+    "fingerprint": "b2ca81961cb8ec4fbd6303f381a49e57790a1be490f29d588abf089d2b38a978"
+  }
+]

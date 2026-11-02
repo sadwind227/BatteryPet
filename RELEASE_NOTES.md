@@ -1,4 +1,17 @@
-﻿# v0.6.3-dev — MIT 版本整理 / MIT release cleanup
+﻿# v0.7.0-dev — Windows 自包含版 / Self-contained Windows build
+
+- HID++ 采集、HID 通信、适配验证与试读、本地脚本/ASAR 分析、agent 任务导出和执行迁移到 C#。用户不再需要 Python。
+- EXE 安装包和便携 ZIP 自带微软 .NET 8.0.27 运行库，无需另装 .NET；保留独立进程超时隔离。
+- 保持设备 ID、schema_version=1 适配格式、旧 Python 指纹与验证记录兼容；保留安装位置选择和旧版数据备份。
+- 程序源码继续 MIT。随包微软运行库保留各自授权，素材范围单独说明。尚无正式数字签名，未宣称完成所有外设实机验证。
+
+# v0.6.4-dev — 自选安装位置 / Custom installation location
+
+- EXE 安装器支持输入或浏览安装位置，并记住上次安装根目录。
+- 升级使用独立版本子目录，保留旧程序、个人设置、自定义适配和验证记录；安装前自动备份，更新已有自启动与开始菜单入口。
+- 程序源码继续采用 MIT；安装器与便携 ZIP 均需 .NET 8 Desktop Runtime x64，HID 功能需 Python 3.10+。
+
+# v0.6.3-dev — MIT 版本整理 / MIT release cleanup
 
 - 移出未启用的第三方雷柏解析器及测试，主程序继续采用 MIT。
 - 保留桌宠、蓝牙、设备管理及关于页功能；独立 HID 研究归档不随包分发。

@@ -1,3 +1,5 @@
+﻿> 0.7.0-dev 起本流程通过 C# 原生辅助进程运行，无需 Python。一行命令引用当前安装的 BatteryPet.exe，请保留其整个程序目录；已有 schema_version=1 候选与验证记录兼容。
+
 # 设备适配 · v0.4.2
 
 面板增加「设备适配」页。当前可以完成：选程序 → 本地分析 → 导出 agent 任务 → 导入候选 → 只读试读 → 对照验证 → 启用或禁用扩展。
@@ -29,7 +31,7 @@
 一行命令由软件按实际路径生成，形如：
 
 ```powershell
-& '实际 Python 路径' '任务包\tools\adapter_tool.py' run --job '任务包\job.json' --agent 'codex'
+& '实际程序目录\BatteryPet.exe' --adapter-tool run --job '任务包\job.json' --agent 'codex'
 ```
 
 这行命令启动 agent 后自动接收与检查其输出，成功时保存 `candidate.json`。可以直接导入该文件，也可将另一台电脑或桌面 agent 生成的同格式 JSON 导回本机。

@@ -1,4 +1,6 @@
-﻿> 本文主体为 v0.5.0 历史检查记录。当前版排除未启用的第三方解析器，实际文件清单与校验见随包 RELEASE_AUDIT.json；许可见 [当前说明](LICENSING.zh-CN.md)。
+﻿> 0.7.0-dev 补充：运行程序不再包含 Python 脚本。随包微软运行库的 459 个文件按官方 NuGet 包校验并保留独立授权，见 licenses/dotnet/README.md 和 RELEASE_AUDIT.json。下文旧版不捆绑运行库的描述仅为历史记录。
+
+> 本文主体为 v0.5.0 历史检查记录。当前版排除未启用的第三方解析器，实际文件清单与校验见随包 RELEASE_AUDIT.json；许可见 [当前说明](LICENSING.zh-CN.md)。
 
 # v0.5.0 文件与权利检查
 

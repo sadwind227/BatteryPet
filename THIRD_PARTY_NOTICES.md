@@ -6,9 +6,9 @@ BatteryPet 程序源码采用 MIT；第三方声明和素材授权单独保留�
 
 ## Windows executable host
 
-`BatteryPet.exe` contains the Microsoft .NET apphost from `Microsoft.NETCore.App.Host.win-x64 8.0.27`. The framework-dependent package does not bundle the .NET runtime or Python. The apphost's original MIT license and upstream notices are included under [licenses/dotnet](licenses/dotnet/README.md). Windows system libraries and fonts are referenced through OS APIs, not copied into this package.
+BatteryPet 0.7.0-dev bundles official Microsoft .NETCore and WindowsDesktop runtime 8.0.27 assets for self-contained Windows x64 deployment. It includes no Python interpreter or Python application scripts. Runtime package-byte hashes are pinned in the release file list.
 
-Windows 包含 .NET apphost 启动器，已保留对应 MIT 许可证与上游声明；未捆绑 .NET/Python 运行环境、Windows DLL 或字体文件。
+微软运行库独立保留自身授权；coreclr.dll、部分 WPF 原生库与 D3DCompiler 的许可并非 BatteryPet 的 MIT。完整来源、许可证映射及第三方声明见 [运行库说明](licenses/dotnet/README.md)。程序源码仍采用根目录 MIT；系统 DLL 和字体通过系统 API 使用，不从 Windows 系统目录复制。
 
 ## Maintainer-created sample image
 

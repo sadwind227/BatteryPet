@@ -11,6 +11,27 @@ static class Program
 {
     [STAThread] static void Main(string[] args)
     {
+        if (args.Contains("--runtime-info"))
+        {
+            using var output = new StreamWriter(Console.OpenStandardOutput(), new System.Text.UTF8Encoding(false));
+            output.Write(JsonSerializer.Serialize(new { runtime = System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory(), python = false, selfContained = File.Exists(Path.Combine(AppContext.BaseDirectory, "coreclr.dll")) })); return;
+        }
+        if (args.Length > 0 && args[0] is "--hid-scan" or "--adapter-read" or "--adapter-tool")
+        {
+            using var writer = new StreamWriter(Console.OpenStandardOutput(), new System.Text.UTF8Encoding(false)) { AutoFlush = true };
+            try
+            {
+                object result = args[0] switch
+                {
+                    "--hid-scan" => NativeLogitech.Scan(),
+                    "--adapter-read" => NativeAdapters.Probe(NativeAdapters.Validate(NativeAdapters.Load(args[1]))),
+                    _ => NativeAdaptation.Execute(args[1..]).GetAwaiter().GetResult()
+                };
+                writer.WriteLine(JsonSerializer.Serialize(result));
+            }
+            catch (Exception ex) { writer.WriteLine(JsonSerializer.Serialize(new { error = ex.Message })); }
+            return;
+        }
         if (args.Contains("--bluetooth-scan"))
         {
             using var writer = new StreamWriter(Console.OpenStandardOutput(), new System.Text.UTF8Encoding(false)) { AutoFlush = true };

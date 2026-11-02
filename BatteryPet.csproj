@@ -3,10 +3,11 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
+    <RuntimeFrameworkVersion>8.0.27</RuntimeFrameworkVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AssemblyName>BatteryPet</AssemblyName>
-    <Version>0.6.3-dev</Version>
+    <Version>0.7.0-dev</Version>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <Authors>sadwind227</Authors>
     <Copyright>Copyright (c) 2026 sadwind227</Copyright>
@@ -16,7 +17,9 @@
   <ItemGroup>
     <EmbeddedResource Include="CHANGELOG.md" LogicalName="BatteryPet.Changelog" />
     <Compile Remove="scripts/installer/**/*.cs" />
-    <None Update="battery_bridge.py;hid_win.py;read_logitech.py;adapter_tool.py;adapter_runtime.py" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <EmbeddedResource Include="MigrationFixtures.json" LogicalName="BatteryPet.MigrationFixtures.json" />
+    <EmbeddedResource Include="AdapterSchema.json" LogicalName="BatteryPet.AdapterSchema.json" />
+    <EmbeddedResource Include="AdapterTask.txt" LogicalName="BatteryPet.AdapterTask.txt" />
     <None Update="Examples/**/*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <None Update="licenses/**/*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>

@@ -8,7 +8,7 @@ Windows 电量托盘 · 互动桌宠 · Agent 辅助设备适配
 
 [English](README.md) · [下载程序](https://github.com/sadwind227/BatteryPet/releases) · [版本记录](CHANGELOG.md) · [详细操作](docs/USER_GUIDE.zh-CN.md)
 
-**v0.6.3-dev · 预览版 · Windows x64 · MIT 许可**
+**v0.7.0-dev · 预览版 · Windows x64 · MIT 许可**
 
 <img src="docs/images/pet-themes.png" alt="三种自绘鲸鱼配色与点击反馈" width="760">
 
@@ -18,13 +18,32 @@ BatteryPet 把支持的外设电量显示成清晰的像素托盘图标。点击
 
 ## 下载与启动
 
-1. 从 [Releases](https://github.com/sadwind227/BatteryPet/releases) 下载 **BatteryPet-v0.6.3-dev-windows-x64-preview.zip**。
-2. 安装 Windows x64 的 **[.NET 8 Desktop Runtime](https://dotnet.microsoft.com/zh-cn/download/dotnet/8.0)**。使用 2.4G/HID 和适配工具时，还需 **[Python 3.10+](https://www.python.org/downloads/windows/)**，并注册到 Windows 或加入 PATH；仅蓝牙读取不需要 Python。
-3. **完整解压**，进入 BatteryPet 文件夹，运行 `BatteryPet.exe`。
+### 三种文件怎么选？
 
-程序包使用已安装的运行环境。请保留 EXE 旁边的 DLL、JSON 和 Python 脚本。名称带 source 的 ZIP 是开发源码。
+**日常使用推荐 EXE 安装包；想自行管理程序目录选便携 ZIP；只有查看或修改代码才需要源码 ZIP。三者不必全部下载。**
 
-**从旧版升级：**先在托盘菜单退出旧程序，再将新版解压到新目录。配置和导入素材保存在 `%LOCALAPPDATA%\BatteryPet`，无需搬动。如果启用了开机启动，请在新版中关闭再开启一次，更新启动路径。
+| 文件 | 适合谁 | 使用方式 |
+| --- | --- | --- |
+| `BatteryPet-v0.7.0-dev-Setup.exe` | 普通用户、从旧版升级的用户 | 安装向导中输入或浏览安装位置，完成后从开始菜单启动。后续升级会记住上次选择的位置。 |
+| `BatteryPet-v0.7.0-dev-windows-x64-preview.zip` | 希望自行解压、移动或保留多个版本的用户 | 完整解压到可写目录，运行其中的 `BatteryPet.exe`；无需运行安装器。 |
+| `BatteryPet-v0.7.0-dev-source.zip` | 开发者、想查看源码的用户 | 包含源码、构建脚本和文档，需要自行编译；不能解压后直接当成程序运行。 |
+
+上面的文件名以本地准备的 v0.7.0-dev 为例，实际已发布版本和附件以 [Releases 页面](https://github.com/sadwind227/BatteryPet/releases)为准。GitHub 自动生成的 **Source code (zip/tar.gz)** 也是源码，不是便携程序包。
+
+### 首次使用
+
+1. 使用 **Windows 10/11 x64**，从 Releases 选择 **Setup.exe 或 windows-x64-preview.zip 其中一个**。
+2. EXE 用户按向导选择安装位置；ZIP 用户完整解压后运行 `BatteryPet.exe`。
+3. **无需安装 Python 或 .NET。**程序包自带所需 .NET 运行库；请保留 EXE 旁的全部 DLL、JSON 和子目录，不能只复制单个 EXE。
+
+“便携”指程序无需安装；设置和素材仍保存在当前账户的 `%LOCALAPPDATA%\BatteryPet`，不会跟着 ZIP 目录自动移动到另一台电脑。自包含包体积较旧版更大。可选 agent 辅助流程仍需要用户自行安装并登录对应 agent；日常电量读取不需要 agent。
+
+### 从旧版升级
+
+- **使用 EXE：**先从托盘菜单退出旧版，运行新版安装包。向导默认填入上次安装根目录，也可以另选位置；新版安装到独立版本子目录，保留旧程序以便回退。安装前自动备份设置、素材、已启用适配和验证记录；已有开机启动命令和开始菜单入口会指向新版，原本未开启的自启动不会被自动开启。
+- **使用 ZIP：**先退出旧版，将新版完整解压到新目录再运行。同一 Windows 账户的设置和适配继续使用；如已开启开机启动，在新版中关闭后再开启一次，以更新程序路径。
+
+无需重新生成已保存的设备适配。数据备份位置、回退方法及兼容范围见 [安装与升级说明](docs/UPGRADE.zh-CN.md)。
 
 ## 功能一览
 
@@ -76,7 +95,7 @@ Codex、Claude Code、DeepSeek Harness、Hermes 提供 CLI 模板；WorkBuddy �
 
 ## 占用与数据保存
 
-v0.4.2 在 20 个逻辑处理器的电脑上，短时受控采样得到：默认桌宠动画约占 **0.28% 整机 CPU、64 MiB 峰值工作集**；仅托盘空闲 CPU 低于采样分辨率，峰值工作集约 51 MiB。这些旧版空闲样本不含 v0.6.3-dev 蓝牙辅助进程的查询峰值；尚未量化 GPU 和成功硬件查询峰值。[测量条件与局限](docs/PERFORMANCE.zh-CN.md)。
+v0.4.2 在 20 个逻辑处理器的电脑上，短时受控采样得到：默认桌宠动画约占 **0.28% 整机 CPU、64 MiB 峰值工作集**；仅托盘空闲 CPU 低于采样分辨率，峰值工作集约 51 MiB。这些旧版空闲样本不含 v0.7.0-dev 蓝牙辅助进程的查询峰值；尚未量化 GPU 和成功硬件查询峰值。[测量条件与局限](docs/PERFORMANCE.zh-CN.md)。
 
 日常电量监测不联网。设置、导入素材、最近读取诊断和适配验证记录存放在 `%LOCALAPPDATA%\BatteryPet`。运行外部 agent 前，请检查导出的证据内容。
 
@@ -90,7 +109,7 @@ python -m unittest test_provider.py test_adaptation.py
 powershell -ExecutionPolicy Bypass -File scripts/package.ps1 -Version 0.5.0
 ```
 
-打包脚本按审核过的文件清单生成程序 ZIP、源码 ZIP、SHA-256 校验值和文件清单，输出到 `artifacts/releases/v0.6.3-dev`，排除缓存、旧发布包和个人配置。
+打包脚本按审核过的文件清单生成程序 ZIP、源码 ZIP、SHA-256 校验值和文件清单，输出到 `artifacts/releases/v0.7.0-dev`，排除缓存、旧发布包和个人配置。
 
 程序检查参数：`--ui-check`、`--adapt-check`、`--icon-check`。`--demo` 使用独立配置和明确标记的模拟值。[验证记录](docs/TESTING.zh-CN.md)。
 

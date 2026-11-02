@@ -1,11 +1,11 @@
 ﻿# SPDX-License-Identifier: MIT
-param([string]$Version = '0.6.3-dev')
+param([string]$Version = '0.7.0-dev')
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
 $release = Join-Path $root "artifacts/releases/v$Version"
 $payload = Join-Path $release "BatteryPet-v$Version-windows-x64-preview.zip"
 if (!(Test-Path -LiteralPath $payload)) { & (Join-Path $PSScriptRoot 'package.ps1') -Version $Version }
-if ($Version -ne '0.6.3-dev') { throw 'Update the installer display version before building another version.' }
+if ($Version -ne '0.7.0-dev') { throw 'Update the installer display version before building another version.' }
 $compiler = Join-Path $env:WINDIR 'Microsoft.NET/Framework64/v4.0.30319/csc.exe'
 $installer = Join-Path $release "BatteryPet-v$Version-Setup.exe"
 if (Test-Path -LiteralPath $installer) { throw "Refusing to overwrite $installer" }
