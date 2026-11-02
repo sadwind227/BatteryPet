@@ -1,4 +1,6 @@
-"""Query-only HID++ diagnostic. HID transport from yszyszysz233/2.4G-battery-viewer."""
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 sadwind227
+"""Query-only HID++ diagnostic using BatteryPet's Windows HID transport."""
 import json
 import time
 from hid_win import enumerate_hid, HidDevice

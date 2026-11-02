@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 sadwind227
 namespace BatteryPet;
 
 static class AdaptationChecks

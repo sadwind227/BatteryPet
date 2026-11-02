@@ -1,48 +1,39 @@
-# 上传到 sadwind227/BatteryPet
+# 发布 BatteryPet v0.5.0
 
-当前远程仓库已有 main 分支及 MIT LICENSE。以下步骤不需要重新创建仓库，也不要用强制推送覆盖现有历史。
+本地发布文件在 `artifacts/releases/v0.5.0/`。仅使用该目录的新包；旧 REVIEW ZIP 和旧「上传准备」不代表本版。当前工作区不是 Git checkout，打包不会自动提交或推送 GitHub。
 
-## 当前交付
+## 文件用途
 
-- `上传准备/BatteryPet/`：按白名单复制的源码、文档、测试、示例和打包脚本。不含旧构建目录或个人数据。
-- `CHANGELOG.md`：本地里程碑记录，最新版本 0.4.1。
-- `RELEASE_NOTES.md`：首次预览版发布说明草稿。
-- `artifacts/releases/v0.4.1/`：本地 Windows 程序审阅 ZIP 和 SHA256 校验值。
+- `BatteryPet-v0.5.0-windows-x64-preview.zip`：给使用者的 Windows 程序。
+- `BatteryPet-v0.5.0-source.zip`：给开发者的源码；解压后内容也可用于上传仓库。
+- `SHA256SUMS.txt`：压缩包校验值。
+- `RELEASE_AUDIT.json`：逐文件清单、散列、许可类别及打包核对。
+- `RELEASE_NOTES.md`：可直接粘贴的发布说明。
 
-## 先确认完整代码的发布条件
+## 更新仓库源码
 
-根目录 MIT 文件与远程一致，但不能覆盖第三方内容。`hid_win.py` 的再分发许可仍待确认，相关证据与处理路径在 THIRD_PARTY_NOTICES.md。
+1. 从 GitHub 仓库拉取当前 main，建立 `release/v0.5.0` 分支。
+2. 解压新的 source ZIP，将 BatteryPet 内的文件同步到仓库根目录。不要把 ZIP 本身提交为源码，不要覆盖已有 Git 历史。
+3. 对照文件清单审查删除项：旧来源不明的 `hid_win.py` 必须被新版替换；旧第三方角色美术和旧构建目录不要保留在当前发布树。
+4. 提交说明可用 `Prepare BatteryPet v0.5.0 preview release`，推送并创建 PR，合并审核后的代码。
+5. 不使用 Git 命令时，可通过网页 Add file → Upload files 上传解压后的源码内容，并通过网页删除旧的、清单外的文件。网页上传不会自动删除已有文件。
 
-完整源码和带此文件的 EXE/ZIP 暂不要直接公开发布。可以先上传原创 README、版本记录、发布状态说明及自绘预览图；完整代码待授权确认或替换通信层并验证后再上传。不要通过删掉第三方声明来规避这个问题。
+## 创建 Release
 
-## 网页上传源码（发布条件解决后）
+1. 打开 [新建 Release](https://github.com/sadwind227/BatteryPet/releases/new)。
+2. Tag 填 `v0.5.0`，Target 指向包含本版源码的提交；标题填 `BatteryPet v0.5.0 — Preview`。
+3. 粘贴 `RELEASE_NOTES.md` 正文，上传两个 ZIP、`SHA256SUMS.txt` 和 `RELEASE_AUDIT.json`。
+4. 勾选 **This is a pre-release**，先保存 draft，核对附件和说明后发布。
+5. 下载已上传附件核对 SHA-256，确认 README 图片、下载入口和许可文件可见。
 
-1. 打开 https://github.com/sadwind227/BatteryPet 并登录自己的账号。
-2. 进入 **Code → Add file → Upload files**。
-3. 在本机打开 `上传准备/BatteryPet`，把里面的文件和目录拖进去。不要把最外层 BatteryPet 文件夹整体再套一层，不要上传 ZIP 当源码。
-4. 确认网页顶层有 README.md、README.zh-CN.md、CHANGELOG.md、BatteryPet.csproj、docs 等。LICENSE 与仓库原文件一致即可。
-5. 提交说明填：`Prepare BatteryPet v0.4.1 preview source and documentation`。
-6. 可选择新建分支 `prepare-v0.4.1` 并提交，在网页比较文件无误后创建 Pull request，合并到 main；个人仓库也可在确认后直接提交 main。
-7. 查看 README 的语言切换、图片和文档链接是否正常。首次只有 v0.4.1 对应的新提交，不需要给旧里程碑补造标签。
+GitHub 自动生成的 Source code 附件取自标签对应的仓库内容；确保标签源码与本地 source ZIP 一致。发布已有版本后，不移动旧标签；后续修复使用新版本号。
 
-当前源码包文件数低于网页一次上传 100 个文件的限制；程序 ZIP 放 Releases，不放源码区。
+## 本地复现
 
-## 创建程序 Release（完整包许可与文件检查完成后）
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/package.ps1 -Version 0.5.0
+```
 
-1. 在仓库右侧进入 **Releases → Draft a new release**。
-2. Tag 填 `v0.4.1`，选择创建该标签，Target 选已合并源码的 `main`。
-3. Title 填 `BatteryPet v0.4.1 — Preview`。
-4. 从 RELEASE_NOTES.md 复制正文；授权事项已解决时同步更新正文和第三方声明，不能保留“已解决”与“待确认”互相矛盾的表述。
-5. 附件上传 Windows ZIP 和 SHA256SUMS.txt。当前生成的 REVIEW 包只供本地审阅，确认可公开分发后重新打包或改名，并重新生成校验值。
-6. 勾选 **This is a pre-release**。先 **Save draft** 检查附件与说明，最后由你点击 **Publish release**。
+脚本从审核清单创建干净源码副本，测试、发布、核对文件并计算校验值。已有同名 ZIP 时拒绝覆盖。代码、图片和 .NET 启动器的许可依据见 [权利检查](COPYRIGHT_AUDIT.zh-CN.md)。
 
-用户应下载程序 ZIP，GitHub 自动生成的 Source code ZIP 是源码，不是安装程序。
-
-## 后续版本
-
-1. 同步更新 BatteryPet.csproj 的 Version、CHANGELOG 和发布说明，例如修复版 0.4.2。
-2. 构建、测试并运行 `scripts/package.ps1 -Version 0.4.2`。
-3. 提交源码、推送，创建对应的 `v0.4.2` 标签和新 Release，不移动已经发布的旧标签。
-4. 旧 ZIP 保留在旧 Release 中；不要把多个“修复版/美化版”目录加入源码仓库。
-
-官方步骤：[网页添加文件](https://docs.github.com/en/repositories/working-with-files/managing-files/adding-a-file-to-a-repository)、[创建与管理 Release](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository)。
+官方步骤：[添加文件](https://docs.github.com/en/repositories/working-with-files/managing-files/adding-a-file-to-a-repository)、[管理 Release](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository)。

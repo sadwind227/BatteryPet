@@ -1,31 +1,45 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 sadwind227
 namespace BatteryPet;
 
 sealed class SettingsPage : FlowLayoutPanel
 {
     readonly Preferences prefs;
     readonly Action apply;
+    readonly Action applyRefresh;
     readonly Action<bool>? setAutoStart;
     readonly SeaSwitch autoStart = new("登录 Windows 时自动启动"), silent = new("静默启动：仅驻留托盘"), sound = new("启用桌宠点击音效");
     readonly Label imageLabel, soundLabel;
+    readonly NumericUpDown refreshSeconds = new() { Minimum = 30, Maximum = 3600, Increment = 30, Width = 110, BorderStyle = BorderStyle.FixedSingle, ForeColor = Ui.Ink, BackColor = Ui.Card, Font = Ui.Font(11), TextAlign = HorizontalAlignment.Center };
     readonly ClickAudio previewAudio = new();
     readonly List<RoundedPanel> cards = new();
     bool syncing;
 
-    public SettingsPage(Preferences prefs, Action apply, Action<bool>? setAutoStart)
+    public SettingsPage(Preferences prefs, Action apply, Action applyRefresh, Action<bool>? setAutoStart)
     {
-        this.prefs = prefs; this.apply = apply; this.setAutoStart = setAutoStart;
+        this.prefs = prefs; this.apply = apply; this.applyRefresh = applyRefresh; this.setAutoStart = setAutoStart;
         Dock = DockStyle.Fill; FlowDirection = FlowDirection.TopDown; WrapContents = false; AutoScroll = true; Padding = new(0, 8, 0, 0);
         var start = Card("启动方式", 165);
         autoStart.Location = new(20, 43); autoStart.Width = 300; start.Controls.Add(autoStart);
         silent.Location = new(20, 80); silent.Width = 300; start.Controls.Add(silent);
         start.Controls.Add(Note("静默设置下次启动生效：仅保留托盘，可手动显示桌宠；低电量提醒仍按设置运行。", 20, 121));
 
+        var refreshCard = Card("电量自动刷新", 130);
+        refreshCard.Controls.Add(new Label { Text = "刷新间隔", Location = new(20, 47), Size = new(110, 27), ForeColor = Ui.Muted });
+        refreshSeconds.Location = new(132, 42); refreshCard.Controls.Add(refreshSeconds);
+        refreshCard.Controls.Add(new Label { Text = "秒", Location = new(255, 47), Size = new(40, 27), ForeColor = Ui.Muted });
+        refreshCard.Controls.Add(Note("输入秒数或点击上下箭头，修改后自动保存并立即生效。范围 30–3600 秒；60 秒 = 1 分钟。", 20, 88));
+        refreshSeconds.BringToFront();
+
         var picture = Card("自定义桌宠图片", 160);
         imageLabel = Note("内置小鲸鱼", 20, 43); picture.Controls.Add(imageLabel);
         var importImage = new SeaButton("导入图片…") { Location = new(20, 75) };
         var resetImage = new SeaButton("恢复内置角色") { Location = new(156, 75) };
         var sample = new SeaButton("使用随附角色") { Location = new(292, 75) };
-        picture.Controls.Add(importImage); picture.Controls.Add(resetImage); picture.Controls.Add(sample);
+        picture.Controls.Add(importImage); picture.Controls.Add(resetImage);
+        string samplePath = Path.Combine(AppContext.BaseDirectory, "Examples", "CustomPet", "batterypet-pet.png");
+        if (File.Exists(samplePath)) picture.Controls.Add(sample);
+        else sample.Dispose();
         sample.Click += (_, _) =>
         {
             string path = Path.Combine(AppContext.BaseDirectory, "Examples", "CustomPet", "batterypet-pet.png");
@@ -63,6 +77,7 @@ sealed class SettingsPage : FlowLayoutPanel
         };
         silent.CheckedChanged += (_, _) => { if (!syncing) { prefs.SilentStart = silent.Checked; apply(); } };
         sound.CheckedChanged += (_, _) => { if (!syncing) { prefs.ClickSoundEnabled = sound.Checked; if (!sound.Checked) previewAudio.Stop(); apply(); } };
+        refreshSeconds.ValueChanged += (_, _) => { if (!syncing) { prefs.RefreshSeconds = (int)refreshSeconds.Value; applyRefresh(); } };
         SizeChanged += (_, _) => ResizeCards();
         VisibleChanged += (_, _) => { if (!Visible) previewAudio.Stop(); };
         Sync();
@@ -79,13 +94,15 @@ sealed class SettingsPage : FlowLayoutPanel
         foreach (var card in cards)
         {
             card.Width = Math.Max(400, ClientSize.Width - SystemInformation.VerticalScrollBarWidth - 6);
-            foreach (var label in card.Controls.OfType<Label>()) label.Width = Math.Max(100, card.Width - label.Left - (int)(20 * DeviceDpi / 96f));
+            // Only stretch explanatory text; stretching the caption covers the numeric editor.
+            foreach (var label in card.Controls.OfType<Label>().Where(label => label.AutoEllipsis)) label.Width = Math.Max(100, card.Width - label.Left - (int)(20 * DeviceDpi / 96f));
         }
     }
     string SoundName() => string.IsNullOrEmpty(prefs.ClickSoundPath) ? "默认轻触音" : (File.Exists(prefs.ClickSoundPath) ? "已导入：" + prefs.ClickSoundName : "音效文件不可用，请重新导入");
     public void Sync()
     {
         syncing = true; autoStart.Checked = prefs.AutoStart; silent.Checked = prefs.SilentStart; sound.Checked = prefs.ClickSoundEnabled;
+        refreshSeconds.Value = Math.Clamp(prefs.RefreshSeconds, 30, 3600);
         imageLabel.Text = string.IsNullOrEmpty(prefs.PetImagePath) ? "内置小鲸鱼" : File.Exists(prefs.PetImagePath) ? "已导入：" + prefs.PetImageName : "图片文件不可用，桌宠已回退至内置角色";
         soundLabel.Text = SoundName(); syncing = false;
     }
