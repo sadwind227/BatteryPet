@@ -8,7 +8,7 @@ Windows tray battery monitor · Interactive desktop pet · Agent-assisted adapte
 
 [简体中文](README.zh-CN.md) · [Download](https://github.com/sadwind227/BatteryPet/releases) · [What's new](CHANGELOG.md) · [User guide](docs/USER_GUIDE.zh-CN.md)
 
-**v0.6.2-dev · Preview · Windows x64 · GPLv3 combined distribution**
+**v0.6.3-dev · Preview · Windows x64 · MIT**
 
 <img src="docs/images/pet-themes.png" alt="BatteryPet's three drawn whale themes and touch feedback" width="760">
 
@@ -18,7 +18,7 @@ BatteryPet displays supported peripheral batteries as readable pixel tray icons.
 
 ## Get started
 
-1. Download **BatteryPet-v0.6.2-dev-windows-x64-preview.zip** from [Releases](https://github.com/sadwind227/BatteryPet/releases).
+1. Download **BatteryPet-v0.6.3-dev-windows-x64-preview.zip** from [Releases](https://github.com/sadwind227/BatteryPet/releases).
 2. Install the **[.NET 8 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)** for Windows x64. For 2.4 GHz/HID and adapter tools, also install **[Python 3.10+](https://www.python.org/downloads/windows/)**, registered with Windows or available as `python` on PATH.
 3. Extract the **entire ZIP** and run `BatteryPet.exe` inside the BatteryPet folder.
 
@@ -76,7 +76,7 @@ Current adapters support Feature reads without preparation commands and passive 
 
 ## Resource use and privacy
 
-A v0.4.2 baseline controlled test on a machine with 20 logical processors measured approximately **0.28% total CPU and 64 MiB peak working set** with the default pet animation. Tray-only idle CPU was below the sampling resolution, with a 51 MiB peak working set. These are idle samples; the v0.6.2-dev Bluetooth helper's query peak is not included. GPU usage and successful hardware-query peaks were not quantified. [Method and limits](docs/PERFORMANCE.zh-CN.md).
+A v0.4.2 baseline controlled test on a machine with 20 logical processors measured approximately **0.28% total CPU and 64 MiB peak working set** with the default pet animation. Tray-only idle CPU was below the sampling resolution, with a 51 MiB peak working set. These are idle samples; the v0.6.3-dev Bluetooth helper's query peak is not included. GPU usage and successful hardware-query peaks were not quantified. [Method and limits](docs/PERFORMANCE.zh-CN.md).
 
 Normal monitoring uses no online service. Settings, imported assets, diagnostics and adapter verification records remain under `%LOCALAPPDATA%\BatteryPet`. Review exported evidence before running an external agent.
 
@@ -90,17 +90,17 @@ python -m unittest test_provider.py test_adaptation.py
 powershell -ExecutionPolicy Bypass -File scripts/package.ps1 -Version 0.5.0
 ```
 
-The packaging script uses a reviewed file list, builds the Windows app, and creates program/source ZIPs, SHA-256 checksums and a file inventory in `artifacts/releases/v0.6.2-dev`. It excludes caches, old releases and personal settings.
+The packaging script uses a reviewed file list, builds the Windows app, and creates program/source ZIPs, SHA-256 checksums and a file inventory in `artifacts/releases/v0.6.3-dev`. It excludes caches, old releases and personal settings.
 
 Optional app checks: `--ui-check`, `--adapt-check`, `--icon-check`. `--demo` uses labeled simulated data and separate settings. [Validation notes](docs/TESTING.zh-CN.md).
 
 ## License and credits
 
-The combined BatteryPet development version is distributed under [GPLv3](LICENSE). Existing MIT notices remain in their files and [the original notice](licenses/BatteryPet-MIT.txt). See [licensing and reuse](docs/LICENSING.zh-CN.md). The .NET executable host carries its [upstream license and notices](licenses/dotnet/README.md). The optional sample character image was created by the maintainer, who states that its character is in the public domain and confirms public redistribution rights; its [separate provenance and bundle scope](Examples/CustomPet/SOURCE.md) do not automatically make the image MIT licensed.
+BatteryPet application source is distributed under [MIT](LICENSE). See [licensing](docs/LICENSING.zh-CN.md). The .NET executable host carries its [upstream license and notices](licenses/dotnet/README.md). The optional sample character image was created by the maintainer, who states that its character is in the public domain and confirms public redistribution rights; its [separate provenance and bundle scope](Examples/CustomPet/SOURCE.md) do not automatically make the image MIT licensed.
 
 The default whales, tray drawings and click tone are produced by BatteryPet code. FerrisPulse, EZ2.4G, INCOTT Driver, DeepSeek Balance Whale Widget and Coopanion informed research or interaction design. Their application code and artwork are not bundled. [Notices](THIRD_PARTY_NOTICES.md) · [File and rights review](docs/COPYRIGHT_AUDIT.zh-CN.md).
 
 Report issues with your device model, receiver VID/PID, connection type and the exact error. Remove device serials and personal paths from diagnostics before sharing.
 
-Development status: license migration and an inactive Rapoo status decoder only; no new hardware compatibility is claimed. Existing v0.5.0 ZIPs retain their original license.
+Development status: the unused third-party decoder is excluded from this MIT version; no new Rapoo compatibility is claimed.
 

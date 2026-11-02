@@ -1,8 +1,8 @@
-# Licenses and third-party notices / 许可与第三方声明
+﻿# Licenses and third-party notices / 许可与第三方声明
 
-The combined development distribution uses [GPLv3](LICENSE). Existing BatteryPet MIT files retain their original notices, also preserved in [BatteryPet-MIT.txt](licenses/BatteryPet-MIT.txt). Third-party components and the sample image retain their separate terms. See [licensing](docs/LICENSING.zh-CN.md).
+BatteryPet application source uses [MIT](LICENSE). Third-party notices and sample-image terms remain separate.
 
-新版组合程序按 GPLv3 分发；自有 MIT 文件及其他组件保留其原始声明。素材授权单独记录。
+BatteryPet 程序源码采用 MIT；第三方声明和素材授权单独保留。
 
 ## Windows executable host
 
@@ -27,7 +27,7 @@ The current `hid_win.py` was reimplemented for BatteryPet from the documented Wi
 Bluetooth discovery, Windows properties and standard BLE reads in v0.5.0 are also implemented through system APIs without third-party Bluetooth code or packages. API references and compatibility-property limits are recorded in [Bluetooth notes](docs/BLUETOOTH.zh-CN.md).
 
 - API references: [Finding and Opening a HID Collection](https://learn.microsoft.com/en-us/windows-hardware/drivers/hid/finding-and-opening-a-hid-collection), [HID API](https://learn.microsoft.com/en-us/windows-hardware/drivers/hid/hid-api).
-- FerrisPulse status decoding is now ported in `rapoo_protocol.py`, GPLv3, with [source and modification records](licenses/ferrispulse/README.md). The module is not enabled for device collection.
+- [FerrisPulse](https://github.com/Ferris-echo/FerrisPulse) was a research reference. Its unused decoder is excluded from this version.
 - [EZ2.4G](https://github.com/Ap0LoG1zE/EZ2.4G) and [INCOTT Driver](https://github.com/oexi/incott-driver-desktop) were research references; their application code is not included.
 - [DeepSeek Balance Whale Widget](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget) and [Coopanion](https://github.com/Pal-AI-Lab/Coopanion) informed interaction research; their artwork, audio and application source are not included.
 

@@ -91,7 +91,7 @@ internal static class Setup
             using (var mutex = new System.Threading.Mutex(true, "BatteryPet.Setup", out first))
             {
                 if (!first) throw new IOException("已有安装程序正在运行。");
-                if (MessageBox.Show("安装或升级电量桌宠 0.6.2-dev（开发预览版）。\n\n保留设备适配、验证记录和个人设置，安装前自动备份。\n需要已安装 .NET 8 Desktop Runtime 和 Python 3。\n\n继续前请从托盘菜单退出旧版电量桌宠。", "电量桌宠安装", MessageBoxButtons.OKCancel) != DialogResult.OK) return 0;
+                if (MessageBox.Show("安装或升级电量桌宠 0.6.3-dev（开发预览版）。\n\n保留设备适配、验证记录和个人设置，安装前自动备份。\n需要已安装 .NET 8 Desktop Runtime 和 Python 3。\n\n继续前请从托盘菜单退出旧版电量桌宠。", "电量桌宠安装", MessageBoxButtons.OKCancel) != DialogResult.OK) return 0;
                 while (Running()) if (MessageBox.Show("请从托盘菜单退出所有电量桌宠，再点重试。", "程序仍在运行", MessageBoxButtons.RetryCancel) != DialogResult.Retry) return 0;
                 string local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
                 string data = Path.Combine(local, "BatteryPet");
@@ -99,7 +99,7 @@ internal static class Setup
                 string backup = Path.Combine(local, "BatteryPet-Backups", stamp);
                 if (Directory.Exists(data)) CopyTree(data, Path.Combine(backup, "data"));
                 else Directory.CreateDirectory(backup);
-                string install = Path.Combine(local, "Programs", "BatteryPet", "0.6.2-dev-" + stamp);
+                string install = Path.Combine(local, "Programs", "BatteryPet", "0.6.3-dev-" + stamp);
                 Extract(install);
                 string exe = Path.Combine(install, "BatteryPet.exe");
                 string shortcut = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Programs), "电量桌宠.lnk");

@@ -1,4 +1,9 @@
-﻿# v0.6.2-dev — 关于与版本 / About and version history
+﻿# v0.6.3-dev — MIT 版本整理 / MIT release cleanup
+
+- 移出未启用的第三方雷柏解析器及测试，主程序继续采用 MIT。
+- 保留桌宠、蓝牙、设备管理及关于页功能；独立 HID 研究归档不随包分发。
+
+# v0.6.2-dev — 关于与版本 / About and version history
 
 - 新增“关于与版本”页，显示开发者清风、当前版本和可选择的历史更新目录。
 - 修正五个导航按钮在高 DPI 下的布局。
@@ -14,7 +19,7 @@
 
 # v0.6.0-dev — Unreleased / 未发布
 
-- GPLv3 combined distribution; original MIT and third-party notices retained.
+- Historical experiment: an inactive GPL decoder was staged; it is excluded from v0.6.3-dev. / 历史试验曾暂存未启用解析器，v0.6.3-dev 已排除。
 - Ported Rapoo battery status decoder from pinned FerrisPulse revision; not enabled as a hardware provider, not live-device verified.
 - No change to immutable v0.5.0 release archives.
 

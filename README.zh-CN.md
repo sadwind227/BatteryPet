@@ -8,7 +8,7 @@ Windows 电量托盘 · 互动桌宠 · Agent 辅助设备适配
 
 [English](README.md) · [下载程序](https://github.com/sadwind227/BatteryPet/releases) · [版本记录](CHANGELOG.md) · [详细操作](docs/USER_GUIDE.zh-CN.md)
 
-**v0.6.2-dev · 预览版 · Windows x64 · 组合程序采用 GPLv3 许可**
+**v0.6.3-dev · 预览版 · Windows x64 · MIT 许可**
 
 <img src="docs/images/pet-themes.png" alt="三种自绘鲸鱼配色与点击反馈" width="760">
 
@@ -18,7 +18,7 @@ BatteryPet 把支持的外设电量显示成清晰的像素托盘图标。点击
 
 ## 下载与启动
 
-1. 从 [Releases](https://github.com/sadwind227/BatteryPet/releases) 下载 **BatteryPet-v0.6.2-dev-windows-x64-preview.zip**。
+1. 从 [Releases](https://github.com/sadwind227/BatteryPet/releases) 下载 **BatteryPet-v0.6.3-dev-windows-x64-preview.zip**。
 2. 安装 Windows x64 的 **[.NET 8 Desktop Runtime](https://dotnet.microsoft.com/zh-cn/download/dotnet/8.0)**。使用 2.4G/HID 和适配工具时，还需 **[Python 3.10+](https://www.python.org/downloads/windows/)**，并注册到 Windows 或加入 PATH；仅蓝牙读取不需要 Python。
 3. **完整解压**，进入 BatteryPet 文件夹，运行 `BatteryPet.exe`。
 
@@ -76,7 +76,7 @@ Codex、Claude Code、DeepSeek Harness、Hermes 提供 CLI 模板；WorkBuddy �
 
 ## 占用与数据保存
 
-v0.4.2 在 20 个逻辑处理器的电脑上，短时受控采样得到：默认桌宠动画约占 **0.28% 整机 CPU、64 MiB 峰值工作集**；仅托盘空闲 CPU 低于采样分辨率，峰值工作集约 51 MiB。这些旧版空闲样本不含 v0.6.2-dev 蓝牙辅助进程的查询峰值；尚未量化 GPU 和成功硬件查询峰值。[测量条件与局限](docs/PERFORMANCE.zh-CN.md)。
+v0.4.2 在 20 个逻辑处理器的电脑上，短时受控采样得到：默认桌宠动画约占 **0.28% 整机 CPU、64 MiB 峰值工作集**；仅托盘空闲 CPU 低于采样分辨率，峰值工作集约 51 MiB。这些旧版空闲样本不含 v0.6.3-dev 蓝牙辅助进程的查询峰值；尚未量化 GPU 和成功硬件查询峰值。[测量条件与局限](docs/PERFORMANCE.zh-CN.md)。
 
 日常电量监测不联网。设置、导入素材、最近读取诊断和适配验证记录存放在 `%LOCALAPPDATA%\BatteryPet`。运行外部 agent 前，请检查导出的证据内容。
 
@@ -90,17 +90,17 @@ python -m unittest test_provider.py test_adaptation.py
 powershell -ExecutionPolicy Bypass -File scripts/package.ps1 -Version 0.5.0
 ```
 
-打包脚本按审核过的文件清单生成程序 ZIP、源码 ZIP、SHA-256 校验值和文件清单，输出到 `artifacts/releases/v0.6.2-dev`，排除缓存、旧发布包和个人配置。
+打包脚本按审核过的文件清单生成程序 ZIP、源码 ZIP、SHA-256 校验值和文件清单，输出到 `artifacts/releases/v0.6.3-dev`，排除缓存、旧发布包和个人配置。
 
 程序检查参数：`--ui-check`、`--adapt-check`、`--icon-check`。`--demo` 使用独立配置和明确标记的模拟值。[验证记录](docs/TESTING.zh-CN.md)。
 
 ## 许可与致谢
 
-新版组合程序按 [GPLv3](LICENSE) 分发；原有 MIT 文件保留原声明，详见[许可与复用说明](docs/LICENSING.zh-CN.md)。.NET 启动器随附[原始许可证与第三方声明](licenses/dotnet/README.md)。可选示例角色图由维护者制作；维护者声明角色属于公有领域并确认持有公开分发权。[素材来源及随包范围](Examples/CustomPet/SOURCE.md)单独记录，图片不会自动改授 MIT。
+程序源码采用 [MIT](LICENSE)，详见[许可说明](docs/LICENSING.zh-CN.md)。.NET 启动器随附[原始许可证与第三方声明](licenses/dotnet/README.md)。可选示例角色图由维护者制作；维护者声明角色属于公有领域并确认持有公开分发权。[素材来源及随包范围](Examples/CustomPet/SOURCE.md)单独记录，图片不会自动改授 MIT。
 
 默认鲸鱼、托盘图形和点击音由 BatteryPet 代码生成。FerrisPulse、EZ2.4G、INCOTT Driver、DeepSeek Balance Whale Widget、Coopanion 用于研究或交互参考，未将其应用源码和美术素材打入本版。[第三方声明](THIRD_PARTY_NOTICES.md) · [文件与权利检查](docs/COPYRIGHT_AUDIT.zh-CN.md)。
 
 反馈问题时，请提供设备型号、接收器 VID/PID、连接方式和完整错误。分享诊断前删除设备序列号和个人路径。
 
-开发状态：已迁移组合分发许可并移植未启用的雷柏解析模块，尚未新增可用品牌适配。旧版 v0.5.0 ZIP 保留原授权。
+开发状态：未使用的第三方解析器已移出本版，不包含新增雷柏支持。
 

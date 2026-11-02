@@ -6,7 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AssemblyName>BatteryPet</AssemblyName>
-    <Version>0.6.2-dev</Version>
+    <Version>0.6.3-dev</Version>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <Authors>sadwind227</Authors>
     <Copyright>Copyright (c) 2026 sadwind227</Copyright>

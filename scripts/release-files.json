@@ -1,5 +1,5 @@
-﻿{
-  "version": "0.6.2-dev",
+{
+  "version": "0.6.3-dev",
   "dotnet_host_version": "8.0.27",
   "source_files": [
     ".gitattributes",
@@ -51,13 +51,7 @@
     "test_adaptation.py",
     "test_provider.py",
     "上传指南.md",
-    "licenses/BatteryPet-MIT.txt",
-    "licenses/GPL-3.0.txt",
-    "licenses/ferrispulse/README.md",
-    "licenses/ferrispulse/rapoo-tray-MIT.md",
     "docs/LICENSING.zh-CN.md",
-    "rapoo_protocol.py",
-    "test_rapoo_protocol.py",
     "scripts/installer/Setup.cs",
     "scripts/build-installer.ps1",
     "docs/UPGRADE.zh-CN.md",
@@ -98,10 +92,6 @@
     "licenses/dotnet/README.md",
     "licenses/dotnet/LICENSE.TXT",
     "licenses/dotnet/THIRD-PARTY-NOTICES.TXT",
-    "licenses/BatteryPet-MIT.txt",
-    "licenses/GPL-3.0.txt",
-    "licenses/ferrispulse/README.md",
-    "licenses/ferrispulse/rapoo-tray-MIT.md",
     "docs/LICENSING.zh-CN.md",
     "docs/UPGRADE.zh-CN.md"
   ],

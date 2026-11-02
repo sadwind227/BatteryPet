@@ -13,7 +13,7 @@ import sys
 import zipfile
 
 MANIFEST = "MANIFEST.sha256"
-LOCAL_MODULES = {"hid_win", "battery_bridge", "read_logitech", "adapter_tool", "adapter_runtime", "rapoo_protocol"}
+LOCAL_MODULES = {"hid_win", "battery_bridge", "read_logitech", "adapter_tool", "adapter_runtime"}
 
 
 def digest(data):
@@ -31,7 +31,7 @@ def category(name):
         return "Upstream .NET license/notices or their provenance record"
     if name == "BatteryPet.exe":
         return ".NET apphost; MIT and upstream notices in licenses/dotnet"
-    return "GPLv3 combined distribution; original MIT notices retained where applicable"
+    return "BatteryPet MIT; separate asset and third-party notices apply"
 
 
 def validate_bytes(files, config, kind):
@@ -47,14 +47,11 @@ def validate_bytes(files, config, kind):
             raise ValueError("Excluded upstream file detected: " + name)
         if name in config["asset_sha256"] and digest(data) != config["asset_sha256"][name]:
             raise ValueError("Image differs from the maintainer's provenance record: " + name)
-    if b"GNU GENERAL PUBLIC LICENSE" not in files["LICENSE"][:200]:
-        raise ValueError("Root GPLv3 license is missing")
+    if b"MIT License" not in files["LICENSE"][:200]:
+        raise ValueError("Root MIT license is missing")
     for name in ("licenses/dotnet/LICENSE.TXT", "licenses/dotnet/THIRD-PARTY-NOTICES.TXT"):
         if len(files[name]) < 100:
             raise ValueError("Missing .NET notice: " + name)
-    for name in ("licenses/BatteryPet-MIT.txt", "licenses/GPL-3.0.txt", "licenses/ferrispulse/README.md", "licenses/ferrispulse/rapoo-tray-MIT.md"):
-        if name not in files or len(files[name]) < 100:
-            raise ValueError("Missing migration/upstream notice: " + name)
     imports = set()
     for name, data in files.items():
         if name.endswith(".py"):

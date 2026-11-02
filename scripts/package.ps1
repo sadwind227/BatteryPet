@@ -1,6 +1,6 @@
 ﻿# SPDX-License-Identifier: MIT
 # Copyright (c) 2026 sadwind227
-param([string]$Version = '0.6.2-dev')
+param([string]$Version = '0.6.3-dev')
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path $PSScriptRoot -Parent
 $configPath = Join-Path $PSScriptRoot 'release-files.json'
@@ -36,7 +36,7 @@ $stagedConfig = Join-Path $buildSource 'scripts/release-files.json'
 if ($LASTEXITCODE -ne 0) { throw 'Source file review failed' }
 Push-Location $buildSource
 try {
-    & python -m unittest test_provider.py test_adaptation.py test_rapoo_protocol.py
+    & python -m unittest test_provider.py test_adaptation.py
     if ($LASTEXITCODE -ne 0) { throw 'Python checks failed' }
 }
 finally { Pop-Location }
