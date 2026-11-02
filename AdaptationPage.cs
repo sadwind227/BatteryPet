@@ -1,3 +1,5 @@
+﻿// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 sadwind227
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
@@ -99,38 +101,78 @@ sealed class AdaptationPage : Panel
         Dock = DockStyle.Fill; BackColor = Ui.Background; Padding = new(0, 8, 0, 0);
         stack = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoScroll = true, FlowDirection = FlowDirection.TopDown, WrapContents = false, BackColor = Ui.Background };
         Controls.Add(stack);
-        Heading("1  选择厂商程序并分析");
+        Heading("设备适配 · 新手操作指南");
+        Note("设备已在“设备电量”页显示？无需适配。只有读不到电量时才使用本页。请先连接并唤醒外设，确认厂商客户端能显示电量。");
+        Note("操作顺序：① 选择真正管理外设的厂商客户端 → ② 分析电量线索 → ③ 获取候选 JSON → ④ 试读并对照 → ⑤ 启用。找到线索不等于已经适配成功。");
+        Heading("1  选择厂商客户端");
+        Note("先点“发现已安装程序”，再从列表选择平时查看电量的客户端。列表也会包含无关程序和安装组件；ASUS Mouse HAL 等名称不代表一定包含可分析的电量代码。");
         Row(programs, Button("发现已安装程序", async () => await FindPrograms()));
+        Row(Button("选择程序…", () => PickProgram()), Button("选择目录…", () => PickDirectory(source)));
+        Note("列表里找不到？任选一种：选择程序 = 客户端 EXE；选择目录 = 客户端安装文件夹。这里只选择位置，不会运行厂商程序。");
         Row(source);
+        Note("上面是将要分析的位置。若路径含 Package Cache、只有安装包或检查了 0 个脚本，请改选真正安装目录。可右键厂商客户端快捷方式 → 打开文件所在的位置。");
         var cancel = new SeaButton("取消当前操作"); cancel.Click += (_, _) => operation?.Cancel();
-        Row(Button("选择程序…", () => PickProgram()), Button("选择目录…", () => PickDirectory(source)), Button("分析所选程序", Analyze), cancel);
-        Note("仅分析选中目录的脚本、JSON 和 ASAR，不运行厂商程序。原生二进制/加密握手可能无法自动识别。");
+        Heading("2  开始分析，查看结果");
+        var analyze = Button("分析所选程序", Analyze); analyze.Primary = true;
+        Row(analyze, cancel);
+        Note("点击“分析所选程序”查找电量线索；“取消当前操作”只停止本次分析，不删除文件。");
+        Note("• 找到线索：继续下一步，尚不代表适配成功。\n• 检查 0 个脚本：先换成真正的安装目录。\n• 没有线索：客户端可能使用原生或加密代码，当前分析无法识别。");
         Row(report);
-        Heading("2  导出到 agent 工作区");
+        Heading("3  获取候选适配文件（可选辅助）");
+        Note("当前版本的本地分析只收集线索，尚不能直接生成全部私有协议。下面是现有的可选 agent 辅助入口；已有可信候选 JSON 可直接跳到第 4 步，无需导出任务。");
         Row(deviceTargets);
+        Note("从上方设备列表选择本次要适配的外设。VID:PID 是设备身份编号，选中后自动填写；不清楚编号时不要猜填，也不要选择无关设备。");
         Row(new Label { Text = "目标 VID:PID", Width = 105, ForeColor = Ui.Muted, Padding = new(0, 5, 0, 0) }, target, agents);
         agents.Items.AddRange(new object[] { "Codex CLI", "Claude Code CLI", "DeepSeek Harness CLI", "Hermes CLI", "WorkBuddy（工作区任务）", "其他 agent（工作区任务）" }); agents.SelectedIndex = 0;
         Row(workspace, Button("选择工作区…", () => PickDirectory(workspace)));
+        Note("“选择工作区”：选一个你准备用来处理适配任务的现有文件夹，不是厂商安装目录。“导出适配任务”：在该文件夹下新建任务包，不会修改原工作区配置。");
         Row(Button("导出适配任务", Export), Button("复制命令/指令", () => { if (command.Text.Length > 0) Clipboard.SetText(command.Text); }), Button("打开任务包", () => { if (Directory.Exists(exportedBundle)) Process.Start(new ProcessStartInfo(exportedBundle) { UseShellExecute = true }); }));
         Row(command);
+        Note("“打开任务包”：查看 TASK.md（操作要求）和 analysis.json（分析片段）。“复制命令/指令”：复制上框内容，再交给所选 agent 处理。导出不会自动运行；完成后找到 candidate.json，再回到本页导入。");
         Note("CLI 模式：复制命令后在终端运行，会使用该 agent 已有登录/额度。WorkBuddy 等桌面模式：在工作区发送生成的指令。只创建新任务子目录，不读取 agent 登录配置；发送前请检查任务片段。");
-        Heading("3  导入候选并只读验证");
+        Heading("4  导入候选，对照真实电量");
+        Note("“导入候选”：选择 candidate.json，只检查格式，不会立即启用。“只读试读”：尝试读取一次电量；失败时按底部错误处理，不表示鼠标没有连接。");
         Row(candidate, Button("导入候选…", Import));
         Row(compare, expected, new Label { Text = "%（填写厂商软件当前显示值）", AutoSize = true, ForeColor = Ui.Muted, Padding = new(0, 3, 0, 0) });
-        Row(Button("只读试读", Probe), Button("启用已验证适配", () => CandidateAction("enable")), Button("禁用此扩展", () => CandidateAction("disable")));
+        Note("先在厂商客户端确认当前电量，再勾选“记录对照电量”、填写同一设备的数值并点“只读试读”。例如今天 80% 对照成功，电量自然降到 79% 后再对照；重复 80% 不算第二个值，请勿为验证刻意深度放电。");
+        Row(Button("只读试读", Probe));
+        Heading("5  启用或停用适配");
+        Row(Button("启用已验证适配", () => CandidateAction("enable")), Button("禁用此扩展", () => CandidateAction("disable")));
+        Note("“启用已验证适配”：两个不同真实电量均对照成功后，加入日常自动刷新；可回“设备电量”页查看。“禁用此扩展”：停止采集当前导入的扩展，不卸载厂商客户端，也不影响内置适配。");
         Note("当前扩展仅支持无需发送准备命令的 HID Feature 读取或被动 Input 报告。未知握手/写入协议不会执行。两次不同真实电量与对照一致后才能启用；导入本身不代表适配成功。");
         status.Dock = DockStyle.Bottom; status.Height = 48; status.Padding = new(4); Controls.Add(status); status.BringToFront();
         programs.SelectedIndexChanged += (_, _) => { if (programs.SelectedItem is InstalledProgram app) source.Text = app.Directory; };
         deviceTargets.SelectedIndexChanged += (_, _) => { if (deviceTargets.SelectedItem is string device && device.Length >= 9) target.Text = device[..9]; };
         source.TextChanged += (_, _) => { analysis = null; report.Clear(); command.Clear(); exportedBundle = ""; };
         workspace.TextChanged += (_, _) => command.Clear(); agents.SelectedIndexChanged += (_, _) => command.Clear(); target.TextChanged += (_, _) => command.Clear();
+        stack.SizeChanged += (_, _) =>
+        {
+            int width = Math.Max(260, stack.ClientSize.Width - SystemInformation.VerticalScrollBarWidth - 12);
+            foreach (Control child in stack.Controls)
+            {
+                if (child is Label) child.Width = width;
+                if (child is FlowLayoutPanel row)
+                {
+                    row.MaximumSize = new(width, 0);
+                    foreach (Control field in row.Controls)
+                        if (field is TextBox || field is ComboBox)
+                            field.Width = Math.Min((int)((field == target ? 110 : field == agents ? 210 : field == programs ? 360 : field == command || field == report ? 670 : 530) * DeviceDpi / 96f), width - 8);
+                }
+            }
+        };
     }
     static TextBox Box(int width) => new() { Width = width, ReadOnly = true, BackColor = Ui.Card, BorderStyle = BorderStyle.FixedSingle };
     void Heading(string text) => stack.Controls.Add(new Label { Text = text, Font = Ui.Font(11, FontStyle.Bold), ForeColor = Ui.Ink, Height = 35, Width = 670, Padding = new(0, 8, 0, 0) });
-    void Note(string text) => stack.Controls.Add(new Label { Text = text, Width = 670, Height = 48, ForeColor = Ui.Muted, Font = Ui.Font(8), Padding = new(2, 3, 0, 0) });
+    void Note(string text)
+    {
+        var label = new Label { Text = text, Width = 670, ForeColor = Ui.Muted, Font = Ui.Font(9), Padding = new(2, 5, 4, 5) };
+        void Fit() => label.Height = TextRenderer.MeasureText(label.Text, label.Font, new Size(label.Width - label.Padding.Horizontal, int.MaxValue), TextFormatFlags.WordBreak | TextFormatFlags.TextBoxControl).Height + label.Padding.Vertical + 6;
+        label.SizeChanged += (_, _) => Fit();
+        Fit(); stack.Controls.Add(label);
+    }
     void Row(params Control[] controls)
     {
-        var row = new FlowLayoutPanel { AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, FlowDirection = FlowDirection.LeftToRight, WrapContents = false, Margin = new(0, 0, 0, 7) };
+        var row = new FlowLayoutPanel { AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, FlowDirection = FlowDirection.LeftToRight, WrapContents = true, MaximumSize = new(700, 0), Margin = new(0, 0, 0, 7) };
         row.Controls.AddRange(controls); stack.Controls.Add(row);
     }
     SeaButton Button(string text, Action action) => Button(text, () => { action(); return Task.CompletedTask; });
@@ -184,7 +226,10 @@ sealed class AdaptationPage : Panel
         text.AppendLine($"检查 {result.GetProperty("scanned_files")} 个脚本/配置，读取 {result.GetProperty("read_bytes")} 字节。");
         foreach (var evidence in result.GetProperty("evidence").EnumerateArray())
             text.AppendLine($"\r\n[{evidence.GetProperty("source_id")}] {evidence.GetProperty("file")}:{evidence.GetProperty("line")}\r\n{evidence.GetProperty("excerpt").GetString()}");
-        report.Text = text.ToString(); status.Text = "分析完成。请选择实际外设 VID:PID，再导出任务；证据不足时 agent 应返回不支持。";
+        report.Text = text.ToString();
+        status.Text = result.GetProperty("evidence").GetArrayLength() == 0
+            ? "未找到可用线索，尚未生成适配。若检查 0 个脚本，请重新选择客户端安装目录；已有内置支持则直接回“设备电量”页。"
+            : "已找到候选线索，尚未适配成功。可选择实际外设并导出任务；得到 candidate.json 后按第 4 步验证。";
     }
     async Task Export()
     {

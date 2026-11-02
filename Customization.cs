@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 sadwind227
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
@@ -150,6 +152,38 @@ sealed class PetImage : IDisposable
         catch { image?.Dispose(); stream.Dispose(); throw; }
     }
     public static PetImage Load(string path) => new(AssetStore.ReadBounded(path));
+    readonly Dictionary<(Size, bool), Rectangle> visibleCache = new();
+    public Rectangle GetVisibleBounds(Size size, bool animate)
+    {
+        if (visibleCache.TryGetValue((size, animate), out var cached)) return cached;
+        using var bitmap = new Bitmap(size.Width, size.Height, PixelFormat.Format32bppArgb);
+        using var g = Graphics.FromImage(bitmap);
+        Rectangle union = Rectangle.Empty;
+        int elapsed = 0;
+        for (int frame = 0; frame < Frames; frame++)
+        {
+            if (Frames > 1) image.SelectActiveFrame(FrameDimension.Time, frame);
+            if (animate || elapsed == firstVisibleOffset)
+            {
+                g.Clear(Color.Transparent);
+                float margin = Math.Min(size.Width, size.Height) * .07f;
+                float scale = Math.Min((size.Width - margin * 2) / image.Width, (size.Height - margin * 2) / image.Height);
+                float w = image.Width * scale, h = image.Height * scale;
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                g.DrawImage(image, (size.Width - w) / 2, (size.Height - h) / 2, w, h);
+                var rect = VisiblePixels.Measure(bitmap);
+                if (!rect.IsEmpty) union = union.IsEmpty ? rect : Rectangle.Union(union, rect);
+            }
+            elapsed += delays[frame];
+        }
+        if (animate) union.Inflate(0, (int)Math.Ceiling(size.Height * .012));
+        // Interpolation may contribute a fractional edge pixel at another scale.
+        union = Rectangle.Intersect(new(Point.Empty, size), union);
+        if (union.IsEmpty) union = new(Point.Empty, size);
+        visibleCache[(size, animate)] = union;
+        return union;
+    }
     public void Draw(Graphics g, Rectangle bounds, double seconds, bool animate, bool dragging = false, double poke = 0)
     {
         if (Frames > 1)

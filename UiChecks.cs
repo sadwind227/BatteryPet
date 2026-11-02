@@ -1,3 +1,5 @@
+﻿// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 sadwind227
 using System.Drawing.Imaging;
 using System.Text.Json;
 using System.Text;
@@ -13,6 +15,8 @@ static class UiChecks
         void Require(bool condition, string label) { if (!condition) throw new Exception(label); checks.Add(label); }
         try
         {
+            checks.AddRange(BluetoothChecks.Run());
+            checks.AddRange(EdgeChecks.Run(folder));
             var gesture = new PetInteraction();
             Require(!gesture.BubbleVisible(0), "启动不显示电量气泡");
             var desktop = new Rectangle(0, 0, 1920, 1040); var petSize = new Size(360, 270);
@@ -28,11 +32,29 @@ static class UiChecks
             Require(!gesture.Up(2, 6) && !gesture.BubbleVisible(2), "拖动松手不显示电量");
             gesture.Down(new(100, 100)); gesture.Cancel(); Require(!gesture.Up(3, 6), "失去鼠标捕获后不误触点击");
             gesture.Down(new(100, 100)); gesture.Up(10, 3); gesture.Dismiss(); Require(!gesture.BubbleVisible(10), "隐藏/手动关闭后气泡消失");
-            var prefs = new Preferences(); var json = JsonSerializer.Serialize(new Preferences { PetSize = 150, PetTheme = "暮光紫", BubbleSeconds = 9, PetAnimate = false });
+            var prefs = new Preferences(); var json = JsonSerializer.Serialize(new Preferences { PetSize = 150, PetTheme = "暮光紫", BubbleSeconds = 9, PetAnimate = false, RefreshSeconds = 120 });
+            var listPrefs = new Preferences();
+            var offline = new DeviceView("bt", "旧蓝牙", 70, false, false, DateTime.Now, false, new(), "蓝牙");
+            var online = offline with { Id = "online", Fresh = true, Settings = new() };
+            var mouse = offline with { Id = "mouse", Connection = "2.4G", Settings = new() };
+            var listed = new List<DeviceView> { offline, online, mouse };
+            Require(DeviceListPolicy.Hidden(offline, listPrefs) && !DeviceListPolicy.Hidden(online, listPrefs) && !DeviceListPolicy.Hidden(mouse, listPrefs), "自动隐藏只针对未确认在线蓝牙，连接恢复后自动出现");
+            listPrefs.HideInactiveBluetooth = false; offline.Settings.Hidden = true;
+            Require(DeviceListPolicy.Hidden(offline, listPrefs), "关闭自动隐藏仍保留手动隐藏");
+            offline.Settings.Hidden = false;
+            Require(!DeviceListPolicy.Hidden(offline, listPrefs), "手动恢复设备不改变托盘及提醒设置");
+            DeviceListPolicy.Move(listPrefs, listed, "mouse", 1);
+            Require(DeviceListPolicy.Ordered(listed, listPrefs).Select(d => d.Id).SequenceEqual(new[] { "mouse", "bt", "online" }), "置顶保留其余设备相对顺序");
+            DeviceListPolicy.Move(listPrefs, listed, "mouse", 3);
+            Require(DeviceListPolicy.Ordered(listed, listPrefs).Last().Id == "mouse", "输入序号及拖动共用移动逻辑，支持向后移动");
+            listPrefs.Devices["bt"] = new() { Hidden = true };
+            var listRestored = JsonSerializer.Deserialize<Preferences>(JsonSerializer.Serialize(listPrefs))!;
+            Require(listRestored.Devices["bt"].Hidden && !listRestored.HideInactiveBluetooth && listRestored.DeviceOrder.SequenceEqual(listPrefs.DeviceOrder), "隐藏偏好和设备顺序可保存并恢复");
             var restored = JsonSerializer.Deserialize<Preferences>(json)!;
             Require(restored.PetSize == 150 && restored.PetTheme == "暮光紫" && restored.BubbleSeconds == 9 && !restored.PetAnimate, "外观与气泡设置序列化恢复");
+            Require(restored.RefreshSeconds == 120, "自动刷新间隔序列化恢复");
             var old = JsonSerializer.Deserialize<Preferences>("{\"Pet\":true,\"Devices\":{}}")!;
-            Require(old.PetSize == 100 && old.BubbleSeconds == 6, "旧版配置获得兼容默认值");
+            Require(old.PetSize == 100 && old.BubbleSeconds == 6 && old.RefreshSeconds == 60, "旧版配置获得兼容默认值");
             Require(!old.AutoStart && !old.SilentStart && !old.ClickSoundEnabled && old.PetImagePath == "", "新增启动与素材设置默认关闭且兼容旧配置");
             var quiet = StartupPolicy.Resolve(new() { SilentStart = true, Pet = true }, false, false);
             Require(!quiet.ShowPanel && !quiet.ShowPet, "静默启动只驻留托盘，不显示面板或桌宠");
@@ -67,6 +89,12 @@ static class UiChecks
                 g.Clear(Color.Transparent); gif.Draw(g, new(0, 0, 40, 40), .12, true); int second = image.GetPixel(20, 20).ToArgb();
                 g.Clear(Color.Transparent); gif.Draw(g, new(0, 0, 40, 40), .12, false); int paused = image.GetPixel(20, 20).ToArgb();
                 Require(gif.Frames == 2 && first != second && paused == first, "GIF 按帧时长播放，关闭动画时显示首帧");
+                var envelope = gif.GetVisibleBounds(image.Size, true);
+                foreach (double time in new[] { 0.0, .12, .5, 1.0 })
+                {
+                    g.Clear(Color.Transparent); gif.Draw(g, new(0, 0, 40, 40), time, true);
+                    Require(envelope.Contains(VisiblePixels.Measure(image)), "GIF 各帧与呼吸动画位于缓存边界内 " + time);
+                }
             }
             string wave = AssetStore.DefaultClick(fixtures); AssetStore.ValidateSound(File.ReadAllBytes(wave), ".wav");
             Require(File.Exists(AssetStore.ImportSound(wave, fixtures)), "默认点击音是可独立导入的 WAV 文件");
@@ -94,7 +122,8 @@ static class UiChecks
                 Require(bitmap.GetPixel(0, 0).A == 0 && bitmap.GetPixel(30, 30).A > 0, "气泡外侧透明，内部可见");
                 bitmap.Save(Path.Combine(folder, "点击电量气泡.png"), ImageFormat.Png);
             }
-            using var form = new DashboardForm(prefs, () => { }, () => { }, () => { }, _ => { }, (_, _) => { }, enabled => prefs.AutoStart = enabled);
+            int refreshApplied = 0;
+            using var form = new DashboardForm(prefs, () => { }, () => { }, () => { }, () => refreshApplied++, _ => { }, (_, _) => { }, enabled => prefs.AutoStart = enabled);
             form.ShowInTaskbar = false; form.StartPosition = FormStartPosition.Manual; form.Location = new(-10000, -10000);
             form.SetDevices(new() { new("test", "G502 X LIGHTSPEED", 86, true, false, DateTime.Today.AddHours(12), true, new()) }, "界面验证 · 示例数据", false, true);
             form.Show(); Application.DoEvents();
@@ -103,6 +132,27 @@ static class UiChecks
                 form.DrawToBitmap(bitmap, new Rectangle(Point.Empty, bitmap.Size)); bitmap.Save(Path.Combine(folder, "设备面板.png"), ImageFormat.Png);
             }
             var controls = Descendants(form).ToList();
+            var deviceCard = controls.OfType<DeviceCard>().Single();
+            var hideButton = Descendants(deviceCard).OfType<Button>().Single(b => b.Text == "隐藏设备");
+            Control bounded = hideButton;
+            bool fullyVisible = true;
+            while (bounded.Parent != null && bounded != deviceCard)
+            {
+                fullyVisible &= bounded.Bottom <= bounded.Parent.ClientSize.Height && bounded.Right <= bounded.Parent.ClientSize.Width;
+                bounded = bounded.Parent;
+            }
+            Require(fullyVisible, "设备卡片底部操作按钮完整位于父容器内");
+            var offlineSwitch = controls.OfType<CheckBox>().Single(c => c.Text == "显示不在线的蓝牙设备");
+            Require(!offlineSwitch.Checked, "不在线蓝牙默认不显示");
+            offlineSwitch.Checked = true;
+            Require(!prefs.HideInactiveBluetooth, "显示不在线蓝牙开关正确反转旧配置逻辑");
+            offlineSwitch.Checked = false;
+            controls.OfType<Button>().Single(b => b.Text == "隐藏设备").PerformClick();
+            Require(!deviceCard.Visible, "点击隐藏立即移除设备卡片");
+            var reveal = controls.OfType<CheckBox>().Single(c => c.Text == "查看隐藏设备"); reveal.Checked = true;
+            Require(deviceCard.Visible, "查看隐藏设备可找回手动隐藏卡片");
+            Descendants(deviceCard).OfType<Button>().Single(b => b.Text == "恢复显示").PerformClick(); reveal.Checked = false;
+            Require(deviceCard.Visible, "恢复显示后退出隐藏视图仍可见");
             ((Button)controls.Single(c => c is SeaButton && c.Text == "桌宠外观")).PerformClick(); Application.DoEvents();
             using (var bitmap = new Bitmap(form.Width, form.Height))
             {
@@ -120,6 +170,10 @@ static class UiChecks
                 form.DrawToBitmap(bitmap, new Rectangle(Point.Empty, bitmap.Size)); bitmap.Save(Path.Combine(folder, "启动与素材.png"), ImageFormat.Png);
             }
             var resourcePage = controls.OfType<SettingsPage>().Single();
+            var refreshSeconds = Descendants(resourcePage).OfType<NumericUpDown>().Single();
+            Require(!refreshSeconds.Parent!.Controls.OfType<Label>().Any(label => label.Bounds.IntersectsWith(refreshSeconds.Bounds)), "刷新间隔数字输入框不被文字标签遮挡");
+            refreshSeconds.Value = 120;
+            Require(prefs.RefreshSeconds == 120 && refreshApplied == 1, "刷新间隔变更写入偏好并立即通知计时器");
             resourcePage.AutoScrollPosition = new(0, resourcePage.VerticalScroll.Maximum); Application.DoEvents();
             using (var bitmap = new Bitmap(form.Width, form.Height))
             {
@@ -139,14 +193,28 @@ static class UiChecks
             }
             var adaptation = controls.OfType<AdaptationPage>().Single();
             Require(adaptation.Visible, "设备适配页可从主导航打开");
+            Require(controls.OfType<Button>().Single(b => b.Text == "选择程序…").Parent != controls.OfType<Button>().Single(b => b.Text == "分析所选程序").Parent, "选择位置与分析操作分行呈现");
             Require(controls.OfType<Button>().Any(b => b.Text == "分析所选程序") && controls.OfType<Button>().Any(b => b.Text == "导出适配任务"), "适配页提供程序分析与 agent 任务导出入口");
             string sample = Path.Combine(AppContext.BaseDirectory, "Examples", "CustomPet", "batterypet-pet.png");
-            Require(File.Exists(sample) && File.Exists(Path.Combine(Path.GetDirectoryName(sample)!, "SOURCE.md")), "随附示例角色图片及来源说明存在");
+            Require(!File.Exists(sample) || File.Exists(Path.Combine(Path.GetDirectoryName(sample)!, "SOURCE.md")), "可选示例角色存在时须随附来源说明");
+            if (!File.Exists(sample))
+                Require(!controls.OfType<Button>().Any(c => c.Text == "使用随附角色"), "未附带角色图片时隐藏示例按钮");
             prefs.PetImagePath = sample; prefs.PetSize = 100; form.SyncAppearance();
             ((Button)controls.Single(c => c is SeaButton && c.Text == "桌宠外观")).PerformClick(); Application.DoEvents();
             using (var bitmap = new Bitmap(form.Width, form.Height))
             {
                 form.DrawToBitmap(bitmap, new Rectangle(Point.Empty, bitmap.Size)); bitmap.Save(Path.Combine(folder, "导入角色预览.png"), ImageFormat.Png);
+            }
+            controls.OfType<Button>().Single(b => b.Text == "关于与版本").PerformClick(); Application.DoEvents();
+            var about = Descendants(form).OfType<AboutPage>().Single();
+            var directory = Descendants(about).OfType<ComboBox>().Single();
+            Require(about.Visible && directory.Items.Count == 11, "关于页列出从 0.1.0 到当前的 11 个历史版本");
+            directory.SelectedIndex = directory.Items.Count - 1;
+            Require(Descendants(about).OfType<RichTextBox>().Single().Text.Contains("G502"), "选择早期版本显示对应更新记录");
+            directory.SelectedIndex = 0;
+            using (var bitmap = new Bitmap(form.Width, form.Height))
+            {
+                form.DrawToBitmap(bitmap, new Rectangle(Point.Empty, bitmap.Size)); bitmap.Save(Path.Combine(folder, "关于与版本.png"), ImageFormat.Png);
             }
             form.Close();
             using (var pet = new PetWindow(new(), () => new("测试鼠标", 86, true, false, false, "测试", true), () => { }, () => { }, () => { }, () => { }, () => { }))
@@ -182,3 +250,4 @@ static class UiChecks
         foreach (Control child in parent.Controls) { yield return child; foreach (var descendant in Descendants(child)) yield return descendant; }
     }
 }
+

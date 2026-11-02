@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 sadwind227
 """Provider contract tests. No hardware I/O, and no synthetic values in normal mode."""
 import unittest
 from types import SimpleNamespace

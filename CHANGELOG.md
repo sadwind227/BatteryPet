@@ -1,8 +1,49 @@
+﻿# v0.6.2-dev — 关于与版本 / About and version history
+
+- 新增“关于与版本”页，显示开发者清风、当前版本和可选择的历史更新目录。
+- 修正五个导航按钮在高 DPI 下的布局。
+
+# v0.6.1-dev — 桌宠贴边与气泡修正 / Edge placement preview
+
+- 新增“关于与版本”页：开发者清风、当前版本及可选择的历史更新目录。
+- 设备列表支持隐藏、恢复、手动排序与拖动位置提示；精简设备卡片文案并修复底部按钮裁切。
+- 设备适配页分步说明，刷新间隔数字显示修正。
+- 桌宠以实际可见内容限制位置，透明留白可越过屏幕；左右预留系统滚动条宽度，上下贴可用区域并避开任务栏。
+- 自定义 PNG/GIF 的各帧可见范围及呼吸范围缓存，避免拖动时扫描源图。
+- 气泡优先上方、空间不足时下方，始终留在当前显示器工作区；极小工作区等比缩小。
+- 修复负坐标副屏位置恢复，支持按显示器 DPI 调整及显示配置变化后的重新约束。
+- 安装版、便携版沿用原个人设置、适配协议与验证记录。无需重新进行设备适配。
+- 本版为未签名开发预览版，仍需 .NET 8 Desktop Runtime x64 和 Python 3。未进行真实多显示器硬件与外部用户电脑验证。
+
+# v0.6.0-dev — Unreleased / 未发布
+
+- GPLv3 combined distribution; original MIT and third-party notices retained.
+- Ported Rapoo battery status decoder from pinned FerrisPulse revision; not enabled as a hardware provider, not live-device verified.
+- No change to immutable v0.5.0 release archives.
+
 # Changelog / 版本记录
 
-These are local development milestones, not previously published GitHub releases. The first proposed release is **v0.4.1 (Preview)**; it has not been published.
+These are local development milestones. The current prepared release is **v0.5.0 (Preview)**; preparing files does not publish a GitHub release.
 
-以下为本地开发里程碑，不代表已发布的 GitHub Release。首次建议发布 **v0.4.1 预览版**，目前尚未发布，不为历史版本伪造提交或标签。
+以下为本地开发里程碑，不代表已发布的 GitHub Release。本次整理 **v0.5.0 预览版**；生成文件不等于已上传发布。
+
+## [0.5.0] - 2026-11-02
+
+- Add native BLE Battery Service reads and optional Windows Bluetooth battery reports. / 加入原生 BLE 标准电量读取和 Windows 蓝牙电量报告。
+- Deduplicate by physical identity; mark cached values with unknown connectivity and avoid alerts for them. / 按物理身份去重；在线状态未知的报告标灰，不触发提醒。
+- Keep Bluetooth and HID failures isolated, with bounded Bluetooth helper runtime and partial results. / 隔离蓝牙与 HID 故障，限制蓝牙查询时间，保留已取得结果。
+- Show the actual connection and source in device cards; new uncertain devices initially stay in the panel. / 显示实际连接方式和来源，未确认在线的新设备先列在面板中。
+- Bluetooth uses only .NET and Windows APIs; no extra package or Python dependency for Bluetooth. / 蓝牙不引入第三方包且不依赖 Python。
+- Validation: 23 Python and 58 application checks; Windows report retrieval verified, live BLE direct read not hardware-verified. / 23 项 Python、58 项程序内检查；已验证系统报告读取，成功 BLE 直读尚待实机对照。
+
+## [0.4.2] - 2026-11-02
+
+- Reimplemented Windows HID transport using documented system APIs; receiver access still requires normal desktop validation. / 根据 Windows 官方 API 独立重写 HID 通信层，接收器仍需正常桌面实测。
+- Show specific Python component failures instead of a generic exception. / 细化 Python 读取组件错误提示。
+- Let users set automatic refresh to 30–3600 seconds; apply and save immediately. / 自动刷新可设为 30–3600 秒，立即生效并保存。
+- Recorded controlled CPU and memory measurements in `docs/PERFORMANCE.zh-CN.md`. / 记录受控 CPU 与内存测量。
+- Added bilingual release documentation, a reviewed package file list, source/program ZIPs and per-file checksums. / 整理双语说明、打包白名单、程序与源码 ZIP 和逐文件校验。
+- Preserved .NET apphost notices and recorded maintainer-created image provenance. / 补齐 .NET 启动器声明与维护者自制图片来源。
 
 ## [0.4.1] - 2026-11-02
 
@@ -50,3 +91,4 @@ These are local development milestones, not previously published GitHub releases
 ### Added / 新增
 - Initial local prototype: Logitech C547 HID++ reads, tray icons, alerts and a basic pet. / 首个本地原型：罗技读取、托盘、提醒和基础桌宠。
 - Real-hardware battery read from G502 X LIGHTSPEED. / 已实机读取 G502 X LIGHTSPEED 电量。
+

@@ -1,83 +1,106 @@
+﻿<div align="center">
+
 # BatteryPet
 
-A Windows peripheral battery monitor with pixel-style tray icons, an interactive desktop pet, custom images and sounds, and AI agent-assisted device adaptation.
+**Your peripheral battery, a little company on your desktop.**
 
-[简体中文](README.zh-CN.md) · [Changelog](CHANGELOG.md) · [Adaptation guide](docs/DEVICE_ADAPTATION.zh-CN.md) · [Third-party notices](THIRD_PARTY_NOTICES.md)
+Windows tray battery monitor · Interactive desktop pet · Agent-assisted adapters
 
-**Version 0.4.1 · Preview**
+[简体中文](README.zh-CN.md) · [Download](https://github.com/sadwind227/BatteryPet/releases) · [What's new](CHANGELOG.md) · [User guide](docs/USER_GUIDE.zh-CN.md)
 
-> Publication preparation: the redistribution license of the existing third-party HID transport has not been confirmed. MIT does not relicense that file or third-party artwork. See [third-party notices](THIRD_PARTY_NOTICES.md) before publishing a build.
+**v0.6.2-dev · Preview · Windows x64 · GPLv3 combined distribution**
 
-![Pet themes and touch feedback](docs/images/pet-themes.png)
+<img src="docs/images/pet-themes.png" alt="BatteryPet's three drawn whale themes and touch feedback" width="760">
 
-## Features
+</div>
 
-- Large pixel battery digits with dark outlines and battery-dependent colors; ring and battery styles. Left-click a device tray icon to refresh.
-- An interactive whale with breathing, blinking, touch and drag feedback. Click the pet to show a temporary battery bubble; dragging stays inside the screen work area.
-- 60–180% scale, three colors, optional animation and always-on-top behavior. Import PNG, JPG, GIF or BMP pets.
-- Optional WAV/MP3 click sounds with preview and restore defaults; disabled initially.
-- Per-device low-battery thresholds and duplicate suppression. Failed reads retain clearly marked old values instead of showing zero.
-- Optional Windows sign-in startup and independent tray-only silent startup.
-- Local vendor-program analysis, agent workspace task export, and declarative adapter import with read-only verification.
+BatteryPet displays supported peripheral batteries as readable pixel tray icons. Click the pet to reveal a battery bubble, or keep everything quietly in the tray.
 
-## Supported hardware
+## Get started
 
-| Device | Connection | Status |
+1. Download **BatteryPet-v0.6.2-dev-windows-x64-preview.zip** from [Releases](https://github.com/sadwind227/BatteryPet/releases).
+2. Install the **[.NET 8 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)** for Windows x64. For 2.4 GHz/HID and adapter tools, also install **[Python 3.10+](https://www.python.org/downloads/windows/)**, registered with Windows or available as `python` on PATH.
+3. Extract the **entire ZIP** and run `BatteryPet.exe` inside the BatteryPet folder.
+
+This package uses installed runtimes. Keep its DLL, JSON files and Python scripts beside the EXE. The source ZIP is for development.
+
+**Upgrading:** exit BatteryPet through the tray menu, extract the new version to a new folder, then start it. Settings and imported assets are kept in `%LOCALAPPDATA%\BatteryPet`. If sign-in startup is enabled, switch it off and on from the new location to update its path.
+
+## What it does
+
+| Battery monitoring | Desktop companion |
+| --- | --- |
+| Large pixel digits, ring and battery tray styles | Click to show a temporary battery bubble |
+| Battery-dependent colors and per-device alert thresholds | Drag within screen boundaries; move across monitors |
+| Automatic refresh every **30–3600 seconds**, default 60 | 60–180% size, three colors, animation and always-on-top |
+| Click a device tray icon to refresh immediately | Import PNG/JPG/GIF/BMP and optional WAV/MP3 click sounds |
+| Retains and marks old values after a failed read | Optional Windows sign-in startup and tray-only silent mode |
+
+Set the refresh interval in **启动与素材 → 电量自动刷新**. Changes take effect immediately and survive a restart. Closing the panel keeps BatteryPet running; quit through its tray menu.
+
+<details>
+<summary>Device panel preview — labeled demonstration data</summary>
+
+![Device panel with a labeled simulated reading](docs/images/device-panel-demo.png)
+
+</details>
+
+<details>
+<summary>Refresh, startup and image settings</summary>
+
+![Startup and refresh settings](docs/images/settings.png)
+
+</details>
+
+## Hardware support
+
+| Hardware | Connection | Status |
 | --- | --- | --- |
-| Logitech G502 X LIGHTSPEED with `046D:C547` receiver | 2.4 GHz | Battery percentage read successfully on real hardware |
-| Other Logitech models/receivers | 2.4 GHz | Not verified |
-| Declarative HID Feature/Input adapters | Vendor HID interface | Experimental; local verification required |
-| Bluetooth devices | Bluetooth | Not implemented |
+| Logitech G502 X LIGHTSPEED, receiver `046D:C547` | 2.4 GHz | Battery percentage read on real hardware |
+| Other Logitech receivers/models | 2.4 GHz | Not verified |
+| User-defined Feature/Input adapters | Vendor HID interface | Experimental; local verification required |
+| BLE Battery Service (0x180F / 0x2A19) | Bluetooth LE | Implemented; successful live read not yet hardware-verified |
+| Windows-reported battery | Bluetooth, including some classic devices | Native Windows report retrieval verified; online state may be unknown |
 
-The Logitech provider queries slots 1 and 2 using HID++ Unified Battery (`0x1004`). This is not universal Logitech support. Sleep, reconnect, charging and driver coexistence need broader real-hardware testing.
+The built-in provider queries receiver slots 1 and 2 using HID++ Unified Battery `0x1004`. Wake a sleeping mouse and refresh if needed. Sleep, reconnect, charging and coexistence with vendor software need broader testing.
 
-## Requirements and installation
+Bluetooth readings are collected automatically after Windows pairing. BLE direct reads take priority over Windows reports. Unconfirmed Windows report values are gray and initially appear only in the panel. Bluetooth monitoring uses .NET and Windows APIs; Python is needed for 2.4 GHz/HID and adapter tools. [Bluetooth support and limits](docs/BLUETOOTH.zh-CN.md).
 
-- Windows 10/11 x64.
-- **.NET 8 Desktop Runtime** and **Python 3.10+**, registered with Windows or available as `python` on PATH.
-- No third-party Python packages required.
+## Device adapters
 
-Once a release is published, download the Windows ZIP from [Releases](https://github.com/sadwind227/BatteryPet/releases), extract the entire folder, and run `BatteryPet.exe`. This is a framework-dependent package, not a standalone executable: keep its scripts and configuration files beside it. Do not run from inside the ZIP.
+The **设备适配** page can analyze selected vendor-client resources locally, export an agent task, and import a declarative adapter candidate. Enabling a candidate requires two different real battery readings to match a reliable reference.
 
-Closing the panel keeps the app running. Quit through the tray menu. Silent startup shows only tray icons; show the pet again from the tray menu.
+Codex, Claude Code, DeepSeek Harness and Hermes have CLI templates; WorkBuddy and other desktop agents can use exported workspace instructions. Install and authenticate the agent separately. Its service may receive task contents and consume quota.
 
-## Device adaptation
+Current adapters support Feature reads without preparation commands and passive Input reports. Complex handshakes and encrypted protocols remain manual work. [Adapter guide](docs/DEVICE_ADAPTATION.zh-CN.md).
 
-1. Open **设备适配 / Device adaptation** and select a vendor program or resource directory. Selecting an EXE does not execute it.
-2. Analyze local script/ASAR evidence, choose the target VID/PID, agent and workspace, then export a task folder.
-3. Review the evidence and run the generated command or send the workspace instruction.
-4. Import `candidate.json`, perform read-only trial reads, and compare two different real battery levels before enabling it.
+## Resource use and privacy
 
-Codex, Claude Code, DeepSeek Harness and Hermes have CLI templates. WorkBuddy and other desktop agents use workspace instructions. Install and authenticate the chosen agent separately; running it may consume its quota.
+A v0.4.2 baseline controlled test on a machine with 20 logical processors measured approximately **0.28% total CPU and 64 MiB peak working set** with the default pet animation. Tray-only idle CPU was below the sampling resolution, with a 51 MiB peak working set. These are idle samples; the v0.6.2-dev Bluetooth helper's query peak is not included. GPU usage and successful hardware-query peaks were not quantified. [Method and limits](docs/PERFORMANCE.zh-CN.md).
 
-Imported adapters only support vendor HID Feature reads without preparation commands and passive Input reports. Encrypted protocols, handshakes and unknown writes remain unsupported. Agent output alone does not prove hardware compatibility. [Detailed guide](docs/DEVICE_ADAPTATION.zh-CN.md).
+Normal monitoring uses no online service. Settings, imported assets, diagnostics and adapter verification records remain under `%LOCALAPPDATA%\BatteryPet`. Review exported evidence before running an external agent.
 
-## Build and verify
+## Build and package
 
-With the .NET 8 SDK and Python installed, run from the repository root:
+Requires the .NET 8 SDK and Python:
 
 ```powershell
 dotnet build -c Release
-python -m unittest test_provider.py test_adaptation.py -v
-dotnet publish -c Release --no-self-contained -o artifacts/app
+python -m unittest test_provider.py test_adaptation.py
+powershell -ExecutionPolicy Bypass -File scripts/package.ps1 -Version 0.5.0
 ```
 
-Optional checks:
+The packaging script uses a reviewed file list, builds the Windows app, and creates program/source ZIPs, SHA-256 checksums and a file inventory in `artifacts/releases/v0.6.2-dev`. It excludes caches, old releases and personal settings.
 
-```powershell
-.\artifacts\app\BatteryPet.exe --ui-check
-.\artifacts\app\BatteryPet.exe --adapt-check
-.\artifacts\app\BatteryPet.exe --icon-check
-```
+Optional app checks: `--ui-check`, `--adapt-check`, `--icon-check`. `--demo` uses labeled simulated data and separate settings. [Validation notes](docs/TESTING.zh-CN.md).
 
-`--demo` uses labeled simulated data and separate settings. Checks write reports and preview images beside the executable. Version 0.4.1 passed **23 Python tests** and **44 application interaction/rendering checks**; no real model calls or actual startup-entry changes are made by those checks. They do not replace a hardware test matrix. [Testing notes](docs/TESTING.zh-CN.md).
+## License and credits
 
-## Data and privacy
+The combined BatteryPet development version is distributed under [GPLv3](LICENSE). Existing MIT notices remain in their files and [the original notice](licenses/BatteryPet-MIT.txt). See [licensing and reuse](docs/LICENSING.zh-CN.md). The .NET executable host carries its [upstream license and notices](licenses/dotnet/README.md). The optional sample character image was created by the maintainer, who states that its character is in the public domain and confirms public redistribution rights; its [separate provenance and bundle scope](Examples/CustomPet/SOURCE.md) do not automatically make the image MIT licensed.
 
-Settings, assets, last-read diagnostics and adapter verification records live under `%LOCALAPPDATA%\BatteryPet`. Normal battery monitoring does not use an online service. Exporting a task creates a new child folder in the selected workspace. Review its evidence before running an external agent: the configured agent service may receive task contents and create its own logs or sessions.
+The default whales, tray drawings and click tone are produced by BatteryPet code. FerrisPulse, EZ2.4G, INCOTT Driver, DeepSeek Balance Whale Widget and Coopanion informed research or interaction design. Their application code and artwork are not bundled. [Notices](THIRD_PARTY_NOTICES.md) · [File and rights review](docs/COPYRIGHT_AUDIT.zh-CN.md).
 
-## License and references
+Report issues with your device model, receiver VID/PID, connection type and the exact error. Remove device serials and personal paths from diagnostics before sharing.
 
-Original BatteryPet code uses [MIT](LICENSE), with explicitly listed [third-party exceptions and pending permissions](THIRD_PARTY_NOTICES.md). The bundled sample character was supplied by the project maintainer; its separate asset terms are documented in [third-party notices](THIRD_PARTY_NOTICES.md). No Coopanion or restricted DeepSeek Balance Whale Widget artwork or sounds are bundled.
+Development status: license migration and an inactive Rapoo status decoder only; no new hardware compatibility is claimed. Existing v0.5.0 ZIPs retain their original license.
 
-References: [EZ2.4G](https://github.com/Ap0LoG1zE/EZ2.4G), [INCOTT Driver](https://github.com/oexi/incott-driver-desktop), [FerrisPulse](https://github.com/Ferris-echo/FerrisPulse), [DeepSeek Balance Whale Widget](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget), [Coopanion](https://github.com/Pal-AI-Lab/Coopanion). References do not imply affiliation or universal device support.
