@@ -1,3 +1,5 @@
+﻿// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 sadwind227
 using System.Drawing.Drawing2D;
 
 namespace BatteryPet;
@@ -44,7 +46,7 @@ sealed class SeaMenuRenderer : ToolStripProfessionalRenderer { public SeaMenuRen
 
 class RoundedPanel : Panel
 {
-    public RoundedPanel() { DoubleBuffered = true; BackColor = Ui.Card; Padding = new(20); }
+    public RoundedPanel() { DoubleBuffered = true; ResizeRedraw = true; BackColor = Ui.Card; Padding = new(20); }
     protected override void OnPaintBackground(PaintEventArgs e)
     {
         e.Graphics.Clear(Parent?.BackColor ?? Ui.Background); e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
@@ -92,20 +94,41 @@ sealed class SeaSwitch : CheckBox
     }
 }
 
-sealed record DeviceView(string Id, string Name, int? Percent, bool Fresh, bool Charging, DateTime Updated, bool Focused, DeviceSettings Settings);
+sealed record DeviceView(string Id, string Name, int? Percent, bool Fresh, bool Charging, DateTime Updated, bool Focused, DeviceSettings Settings, string Connection = "2.4G", string Detail = "");
+
+static class DeviceListPolicy
+{
+    public static bool Hidden(DeviceView device, Preferences prefs) => device.Settings.Hidden ||
+        (prefs.HideInactiveBluetooth && device.Connection.StartsWith("蓝牙") && !device.Fresh);
+    public static List<DeviceView> Ordered(IEnumerable<DeviceView> devices, Preferences prefs) => devices
+        .OrderBy(d => { int index = prefs.DeviceOrder.IndexOf(d.Id); return index < 0 ? int.MaxValue : index; }).ToList();
+    public static void Move(Preferences prefs, IReadOnlyList<DeviceView> devices, string id, int position)
+    {
+        var order = Ordered(devices, prefs).Select(d => d.Id).ToList();
+        if (!order.Remove(id)) return;
+        order.Insert(Math.Clamp(position - 1, 0, order.Count), id);
+        // Retain remembered devices which are absent from this scan.
+        prefs.DeviceOrder = order.Concat(prefs.DeviceOrder.Where(x => !order.Contains(x))).Distinct().ToList();
+    }
+}
 
 sealed class DeviceCard : RoundedPanel
 {
     DeviceView model;
     readonly Action<string, bool> changed;
-    readonly SeaSwitch show = new("显示独立托盘图标"), notify = new("开启低电量提醒");
+    readonly SeaSwitch show = new("托盘图标"), notify = new("低电量提醒");
     readonly NumericUpDown threshold = new() { Minimum = 1, Maximum = 100, Width = 62, BorderStyle = BorderStyle.FixedSingle };
     readonly ComboBox style = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 108, FlatStyle = FlatStyle.Flat };
     readonly SeaButton focus = new("由小鲸鱼关注");
     bool syncing;
-    public DeviceCard(DeviceView model, Action<string, bool> changed, Action<string> focusDevice)
+    public string DeviceId => model.Id;
+    readonly NumericUpDown position = new() { Minimum = 1, Maximum = 10000, Width = 58 };
+    readonly SeaButton hide = new("隐藏设备");
+    bool dropHighlight;
+    public void SetListState(int index) { position.Value = Math.Clamp(index, 1, 10000); hide.Text = model.Settings.Hidden ? "恢复显示" : "隐藏设备"; }
+    public DeviceCard(DeviceView model, Action<string, bool> changed, Action<string> focusDevice, Action<string> hideDevice, Action<string, int> moveDevice)
     {
-        this.model = model; this.changed = changed; Height = 252; Font = Ui.Font(9);
+        this.model = model; this.changed = changed; Height = 340; Font = Ui.Font(9);
         style.Items.AddRange(new object[] { "数字", "圆环", "电池" });
         var right = new FlowLayoutPanel { Width = 270, Dock = DockStyle.Right, FlowDirection = FlowDirection.TopDown, WrapContents = false, Padding = new(14, 2, 0, 0), BackColor = Ui.Card };
         right.Controls.Add(show); right.Controls.Add(notify);
@@ -115,6 +138,41 @@ sealed class DeviceCard : RoundedPanel
         var row = new FlowLayoutPanel { Width = 242, Height = 37, WrapContents = false };
         row.Controls.Add(new Label { Text = "图标样式", AutoSize = true, Padding = new(0, 4, 7, 0), ForeColor = Ui.Muted }); row.Controls.Add(style); right.Controls.Add(row);
         right.Controls.Add(focus); Controls.Add(right);
+        var ordering = new FlowLayoutPanel { Width = 242, Height = 34, WrapContents = false };
+        ordering.Controls.Add(new Label { Text = "序号", AutoSize = true, Padding = new(0, 4, 0, 0) });
+        ordering.Controls.Add(position);
+        var move = new SeaButton("移动") { Width = 65, Height = 28 };
+        move.Click += (_, _) => moveDevice(model.Id, (int)position.Value); ordering.Controls.Add(move); right.Controls.Add(ordering);
+        var management = new FlowLayoutPanel { Width = 242, Height = 38, WrapContents = false };
+        var top = new SeaButton("置顶") { Width = 66, Height = 32 }; hide.Size = new(110, 32);
+        top.Click += (_, _) => moveDevice(model.Id, 1); hide.Click += (_, _) => hideDevice(model.Id);
+        management.Controls.Add(top); management.Controls.Add(hide); right.Controls.Add(management);
+        var grip = new Label { Text = "⠿ 拖动排序", AutoSize = true, ForeColor = Ui.AccentDark, Cursor = Cursors.SizeAll, Location = new(24, 294) };
+        Point down = Point.Empty;
+        grip.MouseDown += (_, e) => { if (e.Button == MouseButtons.Left) down = e.Location; };
+        grip.MouseMove += (_, e) => { if (e.Button == MouseButtons.Left && (Math.Abs(e.X - down.X) > SystemInformation.DragSize.Width / 2 || Math.Abs(e.Y - down.Y) > SystemInformation.DragSize.Height / 2)) {
+            BackColor = Ui.Soft; Invalidate(true);
+            try { grip.DoDragDrop(model.Id, DragDropEffects.Move); }
+            finally { BackColor = Ui.Card; dropHighlight = false; Invalidate(true); }
+        } };
+        Controls.Add(grip);
+        long lastScroll = 0;
+        void DropTarget(Control control)
+        {
+            control.AllowDrop = true;
+            control.DragEnter += (_, e) => { if (e.Data?.GetData(typeof(string)) is string id && id != model.Id) { e.Effect = DragDropEffects.Move; dropHighlight = true; Invalidate(); } };
+            control.DragLeave += (_, _) => { dropHighlight = false; Invalidate(); };
+            control.DragOver += (_, e) =>
+            {
+                if (Parent is not FlowLayoutPanel page || Environment.TickCount64 - lastScroll < 120) return;
+                int y = page.PointToClient(new(e.X, e.Y)).Y;
+                int step = y < 45 ? -30 : y > page.ClientSize.Height - 45 ? 30 : 0;
+                if (step != 0) { lastScroll = Environment.TickCount64; page.AutoScrollPosition = new(0, Math.Max(0, -page.AutoScrollPosition.Y + step)); }
+            };
+            control.DragDrop += (_, e) => { dropHighlight = false; Invalidate(); if (e.Data?.GetData(typeof(string)) is string id) moveDevice(id, (int)position.Value); };
+            foreach (Control child in control.Controls) DropTarget(child);
+        }
+        DropTarget(this);
         show.CheckedChanged += (_, _) => { if (!syncing) { model.Settings.Show = show.Checked; changed(model.Id, false); } };
         notify.CheckedChanged += (_, _) => { if (!syncing) { model.Settings.Notify = notify.Checked; changed(model.Id, false); } };
         threshold.ValueChanged += (_, _) => { if (!syncing) { model.Settings.Threshold = (int)threshold.Value; changed(model.Id, true); Invalidate(); } };
@@ -127,19 +185,30 @@ sealed class DeviceCard : RoundedPanel
         model = next; syncing = true;
         show.Checked = model.Settings.Show; notify.Checked = model.Settings.Notify;
         threshold.Value = Math.Clamp(model.Settings.Threshold, 1, 100); style.SelectedItem = model.Settings.Style;
-        focus.Text = model.Focused ? "小鲸鱼正在关注" : "由小鲸鱼关注"; syncing = false; Invalidate();
+        focus.Text = model.Focused ? "桌宠正在关注" : "设为关注设备"; syncing = false; Invalidate();
     }
     protected override void OnPaint(PaintEventArgs e)
     {
-        base.OnPaint(e); float s = DeviceDpi / 96f; var g = e.Graphics; var saved = g.Save(); g.ScaleTransform(s, s);
+        base.OnPaint(e);
+        if (dropHighlight)
+        {
+            using var pen = new Pen(Ui.Accent, 4 * DeviceDpi / 96f);
+            e.Graphics.DrawLine(pen, 20, 3, Width - 20, 3);
+            using var badge = new SolidBrush(Ui.Soft);
+            e.Graphics.FillRectangle(badge, 20, Height - 40, Width - 40, 32);
+            TextRenderer.DrawText(e.Graphics, "松开放到此位置", Font, new Rectangle(20, Height - 40, Width - 40, 32), Ui.AccentDark, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+        }
+        float s = DeviceDpi / 96f; var g = e.Graphics; var saved = g.Save(); g.ScaleTransform(s, s);
         float width = Width / s - 310;
         using var title = Ui.DrawFont(12, FontStyle.Bold); using var small = Ui.DrawFont(8.5f); using var number = Ui.DrawFont(35, FontStyle.Bold);
         Ui.Text(g, model.Name, title, Ui.Ink, new(24, 20, width - 8, 28));
-        Ui.Text(g, model.Fresh ? (model.Charging ? "●  2.4G · 充电中" : "●  2.4G · 已连接") : "○  暂未响应 · 保留上次读数", small, model.Fresh ? Ui.AccentDark : Ui.Muted, new(25, 54, width, 24));
+        string state = model.Fresh ? (model.Charging ? "充电中" : model.Detail.Length > 0 ? model.Detail : "已连接") :
+            model.Detail.StartsWith("Windows 报告") ? "Windows 报告值 · 未确认在线" : "暂未响应 · 保留上次读数";
+        Ui.Text(g, $"{(model.Fresh ? "●" : "○")}  {model.Connection} · {state}", small, model.Fresh ? Ui.AccentDark : Ui.Muted, new(25, 54, width, 24));
         var color = !model.Fresh ? Ui.Muted : model.Percent < model.Settings.Threshold ? Color.FromArgb(222, 104, 113) : Ui.AccentDark;
         Ui.Text(g, model.Percent.HasValue ? model.Percent + "%" : "—", number, color, new(19, 83, width, 67));
         Ui.Progress(g, new(26, 165, width - 20, 7), model.Percent ?? 0, color);
-        Ui.Text(g, $"更新于 {model.Updated:HH:mm:ss}", small, Ui.Muted, new(25, 190, width, 25));
+        Ui.Text(g, $"{(model.Detail.StartsWith("Windows 报告") ? "检查于" : "更新于")} {model.Updated:HH:mm:ss}", small, Ui.Muted, new(25, 190, width, 25));
         g.Restore(saved);
     }
 }
@@ -191,8 +260,12 @@ sealed class DashboardForm : Form
     readonly AdaptationPage adaptationPage;
     readonly Func<bool>? actualPetVisible;
     readonly Dictionary<string, DeviceCard> cards = new();
+    readonly FlowLayoutPanel listTools;
+    readonly CheckBox showHidden = new() { Text = "查看隐藏设备", AutoSize = true };
+    readonly Label listSummary = new() { AutoSize = true, ForeColor = Ui.Muted };
+    List<DeviceView> currentDevices = new();
     bool syncing;
-    public DashboardForm(Preferences prefs, Action refresh, Action toggle, Action apply, Action<string> focus, Action<string, bool> changeDevice, Action<bool>? setAutoStart = null, Func<bool>? actualPetVisible = null)
+    public DashboardForm(Preferences prefs, Action refresh, Action toggle, Action apply, Action applyRefresh, Action<string> focus, Action<string, bool> changeDevice, Action<bool>? setAutoStart = null, Func<bool>? actualPetVisible = null)
     {
         this.prefs = prefs; this.refresh = refresh; this.toggle = toggle; this.apply = apply; this.focus = focus; this.changeDevice = changeDevice;
         this.actualPetVisible = actualPetVisible;
@@ -208,23 +281,46 @@ sealed class DashboardForm : Form
         header.Controls.Add(new Label { Text = "设备的电量，桌面上的一点陪伴。", ForeColor = Ui.Muted, Location = new(3, 50), AutoSize = true });
         refreshButton = new SeaButton("刷新电量", true) { Anchor = AnchorStyles.Top | AnchorStyles.Right, Location = new(630, 18) }; refreshButton.Click += (_, _) => refresh(); header.Controls.Add(refreshButton); layout.Controls.Add(header, 0, 0);
         header.SizeChanged += (_, _) => refreshButton.Location = new(Math.Max(0, header.ClientSize.Width - refreshButton.Width - 4), (int)(18 * DeviceDpi / 96f));
-        var nav = new FlowLayoutPanel { Dock = DockStyle.Fill, Margin = Padding.Empty, WrapContents = false };
+        var nav = new TableLayoutPanel { Dock = DockStyle.Fill, Margin = Padding.Empty, ColumnCount = 5, RowCount = 1 };
+        for (int i = 0; i < 5; i++) nav.ColumnStyles.Add(new(SizeType.Percent, 20));
         deviceTab = new SeaButton("设备电量", true); lookTab = new SeaButton("桌宠外观") { Margin = new(8, 3, 3, 3) };
         var settingsTab = new SeaButton("启动与素材") { Margin = new(8, 3, 3, 3) };
+        var aboutTab = new SeaButton("关于与版本") { Margin = new(8, 3, 3, 3) };
+        var aboutPage = new AboutPage { Visible = false };
         var adaptTab = new SeaButton("设备适配") { Margin = new(8, 3, 3, 3) };
-        nav.Controls.Add(deviceTab); nav.Controls.Add(lookTab); nav.Controls.Add(settingsTab); nav.Controls.Add(adaptTab); layout.Controls.Add(nav, 0, 1);
+        nav.Controls.Add(deviceTab); nav.Controls.Add(lookTab); nav.Controls.Add(settingsTab); nav.Controls.Add(adaptTab); nav.Controls.Add(aboutTab);
+        foreach (Control tab in nav.Controls) tab.Dock = DockStyle.Fill;
+        layout.Controls.Add(nav, 0, 1);
         var host = new Panel { Dock = DockStyle.Fill, Margin = Padding.Empty }; layout.Controls.Add(host, 0, 2);
         devicePage = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, Padding = new(0, 8, 0, 0) };
+        listTools = new FlowLayoutPanel { AutoSize = true, FlowDirection = FlowDirection.LeftToRight, WrapContents = true, Margin = new(0, 0, 0, 12) };
+        var autoHide = new CheckBox { Text = "显示不在线的蓝牙设备", AutoSize = true, Checked = !prefs.HideInactiveBluetooth };
+        listTools.Controls.Add(autoHide); listTools.Controls.Add(showHidden); listTools.Controls.Add(listSummary);
+        var tips = new ToolTip();
+        tips.SetToolTip(autoHide, "包含 Windows 保留读数、暂未确认在线的蓝牙设备。");
+        tips.SetToolTip(showHidden, "查看手动隐藏的设备并恢复。隐藏只影响列表，不改变托盘和提醒。");
+        Disposed += (_, _) => tips.Dispose();
+        foreach (Control item in listTools.Controls) item.Margin = new(4, 8, 18, 8);
+        autoHide.CheckedChanged += (_, _) => { prefs.HideInactiveBluetooth = !autoHide.Checked; apply(); ArrangeDevices(); };
+        showHidden.CheckedChanged += (_, _) => ArrangeDevices();
+        devicePage.Controls.Add(listTools);
         empty = new Label { AutoSize = false, Height = 160, ForeColor = Ui.Muted, Padding = new(22), Text = "准备读取设备…" }; devicePage.Controls.Add(empty);
         lookPage = new Panel { Dock = DockStyle.Fill, Visible = false, Padding = new(0, 8, 0, 0) };
-        settingsPage = new SettingsPage(prefs, () => { apply(); SyncAppearance(); }, setAutoStart) { Visible = false };
+        settingsPage = new SettingsPage(prefs, () => { apply(); SyncAppearance(); }, applyRefresh, setAutoStart) { Visible = false };
         adaptationPage = new AdaptationPage { Visible = false };
-        host.Controls.Add(devicePage); host.Controls.Add(lookPage); host.Controls.Add(settingsPage); host.Controls.Add(adaptationPage);
-        void ResetAdaptTab() { adaptationPage.Hide(); adaptTab.Primary = false; adaptTab.Invalidate(); }
+        host.Controls.Add(aboutPage); host.Controls.Add(devicePage); host.Controls.Add(lookPage); host.Controls.Add(settingsPage); host.Controls.Add(adaptationPage);
+        void ResetAbout() { aboutPage.Hide(); aboutTab.Primary = false; aboutTab.Invalidate(); }
+        void ResetAdaptTab() { ResetAbout(); adaptationPage.Hide(); adaptTab.Primary = false; adaptTab.Invalidate(); }
         deviceTab.Click += (_, _) => { ResetAdaptTab(); settingsPage.Hide(); settingsTab.Primary = false; settingsTab.Invalidate(); Page(false); };
         lookTab.Click += (_, _) => { ResetAdaptTab(); settingsPage.Hide(); settingsTab.Primary = false; settingsTab.Invalidate(); Page(true); };
         settingsTab.Click += (_, _) => { ResetAdaptTab(); lookPage.Hide(); devicePage.Hide(); settingsPage.Show(); settingsPage.BringToFront(); settingsTab.Primary = true; deviceTab.Primary = lookTab.Primary = false; settingsTab.Invalidate(); deviceTab.Invalidate(); lookTab.Invalidate(); };
-        adaptTab.Click += (_, _) => { settingsPage.Hide(); lookPage.Hide(); devicePage.Hide(); adaptationPage.Show(); adaptationPage.BringToFront(); adaptTab.Primary = true; settingsTab.Primary = deviceTab.Primary = lookTab.Primary = false; foreach (var button in new[] { adaptTab, settingsTab, deviceTab, lookTab }) button.Invalidate(); };
+        adaptTab.Click += (_, _) => { ResetAbout(); settingsPage.Hide(); lookPage.Hide(); devicePage.Hide(); adaptationPage.Show(); adaptationPage.BringToFront(); adaptTab.Primary = true; settingsTab.Primary = deviceTab.Primary = lookTab.Primary = false; foreach (var button in new[] { adaptTab, settingsTab, deviceTab, lookTab }) button.Invalidate(); };
+        aboutTab.Click += (_, _) =>
+        {
+            settingsPage.Hide(); lookPage.Hide(); devicePage.Hide(); adaptationPage.Hide();
+            aboutPage.Show(); aboutPage.BringToFront();
+            foreach (var tab in new[] { deviceTab, lookTab, settingsTab, adaptTab, aboutTab }) { tab.Primary = tab == aboutTab; tab.Invalidate(); }
+        };
         footer = new Label { Dock = DockStyle.Fill, ForeColor = Ui.Muted, Font = Ui.Font(8), Margin = Padding.Empty, TextAlign = ContentAlignment.MiddleLeft }; layout.Controls.Add(footer, 0, 3);
         var lookLayout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1, Margin = Padding.Empty };
         lookLayout.ColumnStyles.Add(new(SizeType.Absolute, 235)); lookLayout.ColumnStyles.Add(new(SizeType.Percent, 100)); lookPage.Controls.Add(lookLayout);
@@ -272,23 +368,101 @@ sealed class DashboardForm : Form
     {
         int width = Math.Max(400, devicePage.ClientSize.Width - SystemInformation.VerticalScrollBarWidth - 6);
         foreach (var card in cards.Values) card.Width = width; empty.Width = width;
+        listTools.MaximumSize = new(width, 0);
+    }
+    void MoveDevice(string id, int position)
+    {
+        DeviceListPolicy.Move(prefs, currentDevices, id, position); apply(); ArrangeDevices();
+    }
+    void HideDevice(string id)
+    {
+        var device = currentDevices.First(d => d.Id == id);
+        device.Settings.Hidden = !device.Settings.Hidden;
+        changeDevice(id, false); ArrangeDevices();
+    }
+    void ArrangeDevices()
+    {
+        devicePage.SuspendLayout();
+        var ordered = DeviceListPolicy.Ordered(currentDevices, prefs);
+        int hidden = ordered.Count(d => DeviceListPolicy.Hidden(d, prefs));
+        listSummary.Text = $"共 {ordered.Count} 台 · 隐藏 {hidden} 台" + (showHidden.Checked ? " · 正在查看全部设备" : "");
+        foreach (var card in cards.Values) card.Visible = false;
+        for (int i = 0; i < ordered.Count; i++)
+        {
+            var card = cards[ordered[i].Id]; card.SetListState(i + 1);
+            card.Visible = showHidden.Checked || !DeviceListPolicy.Hidden(ordered[i], prefs);
+            devicePage.Controls.SetChildIndex(card, i + 2);
+        }
+        empty.Visible = ordered.Count == 0 || (!showHidden.Checked && hidden == ordered.Count);
+        if (ordered.Count > 0 && hidden == ordered.Count) empty.Text = "设备已被隐藏。勾选“查看隐藏设备”可查看和恢复；\n自动隐藏的蓝牙设备确认在线后会重新显示，也可开启“显示不在线的蓝牙设备”。";
+        devicePage.ResumeLayout(); ResizeCards();
     }
     public void SetDevices(List<DeviceView> devices, string message, bool busy, bool demo)
     {
+        currentDevices = devices;
         refreshButton.Text = busy ? "读取中…" : "刷新电量"; refreshButton.Enabled = !busy;
-        footer.Text = (demo ? "模拟演示 · 非真实设备电量" : message) + "\n每 60 秒刷新 · 关闭窗口后继续托盘运行";
+        footer.Text = (demo ? "模拟演示 · 非真实设备电量" : message) + $"\n每 {Math.Clamp(prefs.RefreshSeconds, 30, 3600)} 秒刷新 · 关闭窗口后继续托盘运行";
         empty.Visible = devices.Count == 0;
-        empty.Text = busy ? "正在寻找罗技鼠标…\n\n首次读取可能需要几秒。" : "尚未读到电量\n\n" + message + "\n\n鼠标已连接时也可能暂未响应，可唤醒后再次刷新。";
+        empty.Text = busy ? "正在读取 2.4G、HID 和已配对蓝牙设备…\n\n首次读取可能需要几秒。" : "尚未读到电量\n\n" + message + "\n\n请连接并唤醒外设后刷新；蓝牙设备需向 Windows 或标准电量服务提供读数。";
         foreach (var device in devices)
         {
             if (!cards.TryGetValue(device.Id, out var card))
             {
-                card = new DeviceCard(device, changeDevice, focus) { Margin = new(0, 0, 0, 14) };
+                card = new DeviceCard(device, changeDevice, focus, HideDevice, MoveDevice) { Margin = new(0, 0, 0, 14) };
                 float scale = DeviceDpi / 96f; if (scale != 1) card.Scale(new SizeF(scale, scale));
                 cards[device.Id] = card; devicePage.Controls.Add(card);
             }
             else card.UpdateModel(device);
         }
-        ResizeCards();
+        ArrangeDevices();
+    }
+}
+
+
+sealed class AboutPage : Panel
+{
+    public AboutPage()
+    {
+        Dock = DockStyle.Fill; BackColor = Ui.Background; Padding = new(0, 8, 0, 0);
+        var layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 4, Padding = new(16), BackColor = Ui.Card };
+        layout.ColumnStyles.Add(new(SizeType.Percent, 100));
+        layout.RowStyles.Add(new(SizeType.Absolute, 68));
+        layout.RowStyles.Add(new(SizeType.Absolute, 34));
+        layout.RowStyles.Add(new(SizeType.Absolute, 38));
+        layout.RowStyles.Add(new(SizeType.Percent, 100));
+        Controls.Add(layout);
+        string version = typeof(AboutPage).Assembly.GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false)
+            .Cast<System.Reflection.AssemblyInformationalVersionAttribute>().FirstOrDefault()?.InformationalVersion.Split('+')[0] ?? Application.ProductVersion;
+        layout.Controls.Add(new Label { Text = $"BatteryPet · 电量桌宠\n开发者：清风    ·    当前版本：v{version}", Dock = DockStyle.Fill, Font = Ui.Font(12, FontStyle.Bold), ForeColor = Ui.Ink }, 0, 0);
+        layout.Controls.Add(new Label { Text = "版本目录 · 历史开发记录不代表已在 GitHub 发布", Dock = DockStyle.Fill, ForeColor = Ui.Muted }, 0, 1);
+        var versions = new ComboBox { Name = "versionDirectory", DropDownStyle = ComboBoxStyle.DropDownList, Dock = DockStyle.Fill, Font = Ui.Font(10) };
+        var details = new RichTextBox { Name = "versionDetails", Dock = DockStyle.Fill, ReadOnly = true, BorderStyle = BorderStyle.None, BackColor = Ui.Card, ForeColor = Ui.Ink, Font = Ui.Font(10), DetectUrls = false, ScrollBars = RichTextBoxScrollBars.Vertical };
+        layout.Controls.Add(versions, 0, 2); layout.Controls.Add(details, 0, 3);
+        var entries = new List<(string Title, string Text)>();
+        using var stream = typeof(AboutPage).Assembly.GetManifestResourceStream("BatteryPet.Changelog");
+        if (stream != null)
+        {
+            using var reader = new StreamReader(stream);
+            foreach (var block in System.Text.RegularExpressions.Regex.Split(reader.ReadToEnd(), @"(?m)(?=^#{1,2} (?:v\d|\[\d))"))
+            {
+                var lines = block.Trim().Split('\n');
+                if (!System.Text.RegularExpressions.Regex.IsMatch(lines[0], @"^#{1,2} (?:v\d|\[\d)")) continue;
+                string title = lines[0].TrimStart('#', ' ').Split(" / ")[0];
+                var body = new List<string>();
+                foreach (string raw in lines.Skip(1))
+                {
+                    if (raw.StartsWith("# Changelog")) break;
+                    if (!raw.StartsWith("- ")) continue;
+                    string text = raw[2..].Trim();
+                    if (text.Contains(" / ")) text = text.Split(" / ").Last();
+                    body.Add("•  " + text.Replace("`", ""));
+                }
+                entries.Add((title, string.Join("\n\n", body)));
+            }
+        }
+        foreach (var entry in entries) versions.Items.Add(entry.Title);
+        versions.SelectedIndexChanged += (_, _) => details.Text = entries[versions.SelectedIndex].Text;
+        if (entries.Count > 0) versions.SelectedIndex = 0;
+        else details.Text = "暂无版本记录。";
     }
 }

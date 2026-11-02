@@ -1,12 +1,21 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 sadwind227
 """Single-shot Logitech provider. JSON only on stdout; no device settings writes."""
 import hashlib
 import json
 import sys
-from hid_win import enumerate_hid, HidDevice
-from read_logitech import call, feature
+try:
+    from hid_win import enumerate_hid, HidDevice
+    from read_logitech import call, feature
+    _load_error = None
+except Exception as error:
+    enumerate_hid = HidDevice = call = feature = None
+    _load_error = error
 
 
 def scan_builtin():
+    if _load_error is not None:
+        return {'devices': [], 'message': 'HID 通信层加载失败：' + str(_load_error)}
     devices = enumerate_hid()
     receivers = [d for d in devices if d.vid == 0x046D and d.pid == 0xC547]
     candidates = [d for d in receivers if d.usage_page == 0xFF00 and d.output_len == 20]
@@ -39,7 +48,7 @@ def scan_builtin():
                     if not reply or len(reply) < 3 or reply[0] > 100:
                         continue
                     results.append({'id': key, 'name': name, 'percent': reply[0],
-                                    'charging': reply[2] in (1, 2), 'status': '已连接 · 2.4G'})
+                                    'charging': reply[2] in (1, 2), 'status': '已连接', 'connection': '2.4G'})
         except OSError as error:
             return {'devices': results, 'message': '接收器访问失败：' + str(error)}
     if results:

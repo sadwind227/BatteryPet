@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
@@ -6,11 +6,18 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AssemblyName>BatteryPet</AssemblyName>
-    <Version>0.4.1</Version>
-    <DefaultItemExcludes>$(DefaultItemExcludes);上传准备/**;artifacts/**</DefaultItemExcludes>
+    <Version>0.6.3-dev</Version>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <Authors>sadwind227</Authors>
+    <Copyright>Copyright (c) 2026 sadwind227</Copyright>
+    <Description>Windows peripheral battery monitor and interactive desktop pet.</Description>
+    <DefaultItemExcludes>$(DefaultItemExcludes);上传准备/**;发布版/**;build/**;artifacts/**</DefaultItemExcludes>
   </PropertyGroup>
   <ItemGroup>
-    <None Update="battery_bridge.py;hid_win.py;read_logitech.py;adapter_tool.py;adapter_runtime.py" CopyToOutputDirectory="PreserveNewest" />
+    <EmbeddedResource Include="CHANGELOG.md" LogicalName="BatteryPet.Changelog" />
+    <Compile Remove="scripts/installer/**/*.cs" />
+    <None Update="battery_bridge.py;hid_win.py;read_logitech.py;adapter_tool.py;adapter_runtime.py" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <None Update="Examples/**/*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Update="licenses/**/*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

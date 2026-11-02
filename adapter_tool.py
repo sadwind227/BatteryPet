@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 sadwind227
 """Local evidence analysis, portable agent jobs, strict candidate validation. Standard library only."""
 import argparse
 import datetime

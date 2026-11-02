@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 sadwind227
 using System.Diagnostics;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
@@ -12,6 +14,45 @@ static class PetBounds
     public static Point Constrain(Point position, Size size, Rectangle workArea) => new(
         Math.Clamp(position.X, workArea.Left, Math.Max(workArea.Left, workArea.Right - size.Width)),
         Math.Clamp(position.Y, workArea.Top, Math.Max(workArea.Top, workArea.Bottom - size.Height)));
+
+    public static Point ConstrainVisible(Point position, Rectangle visible, Rectangle area, int sideGap)
+    {
+        int gap = Math.Min(sideGap, Math.Max(0, (area.Width - visible.Width) / 2));
+        int left = area.Left + gap - visible.Left, top = area.Top - visible.Top;
+        return new(Math.Clamp(position.X, left, Math.Max(left, area.Right - gap - visible.Right)),
+            Math.Clamp(position.Y, top, Math.Max(top, area.Bottom - visible.Bottom)));
+    }
+
+    public static Rectangle PlaceBubble(Rectangle pet, Size desired, Rectangle area)
+    {
+        double scale = Math.Min(1, Math.Min(area.Width / (double)desired.Width, area.Height / (double)desired.Height));
+        var size = new Size(Math.Max(1, (int)(desired.Width * scale)), Math.Max(1, (int)(desired.Height * scale)));
+        int x = pet.Left + (pet.Width - size.Width) / 2;
+        int y = pet.Top - size.Height;
+        if (y < area.Top) y = pet.Bottom;
+        return new(Constrain(new(x, y), size, area), size);
+    }
+}
+
+static class VisiblePixels
+{
+    public static Rectangle Measure(Bitmap bitmap)
+    {
+        var data = bitmap.LockBits(new(Point.Empty, bitmap.Size), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+        int left = bitmap.Width, top = bitmap.Height, right = -1, bottom = -1;
+        try
+        {
+            byte[] row = new byte[bitmap.Width * 4];
+            for (int y = 0; y < bitmap.Height; y++)
+            {
+                Marshal.Copy(data.Scan0 + y * data.Stride, row, 0, row.Length);
+                for (int x = 0; x < bitmap.Width; x++) if (row[x * 4 + 3] > 0)
+                { left = Math.Min(left, x); right = Math.Max(right, x); top = Math.Min(top, y); bottom = y; }
+            }
+        }
+        finally { bitmap.UnlockBits(data); }
+        return right < left ? Rectangle.Empty : Rectangle.FromLTRB(left, top, right + 1, bottom + 1);
+    }
 }
 
 // Gesture decisions are independent of rendering: dragging must never open a battery bubble.
@@ -58,6 +99,7 @@ abstract class AlphaWindow : Form
     protected AlphaWindow()
     {
         FormBorderStyle = FormBorderStyle.None; ShowInTaskbar = false;
+        StartPosition = FormStartPosition.Manual;
         AutoScaleMode = AutoScaleMode.None;
     }
     protected override bool ShowWithoutActivation => true;
@@ -110,6 +152,12 @@ sealed class PetWindow : AlphaWindow
     Point windowOrigin;
     bool hovered;
     double pokedAt = -10;
+    Rectangle visibleBounds;
+    bool applyingSettings;
+    public Rectangle VisibleBounds => visibleBounds;
+    [DllImport("user32.dll")] static extern int GetSystemMetricsForDpi(int index, uint dpi);
+    int SideGap => Math.Max(1, GetSystemMetricsForDpi(2, (uint)DeviceDpi));
+    Rectangle VisibleScreenBounds => new(new Point(Left + visibleBounds.Left, Top + visibleBounds.Top), visibleBounds.Size);
 
     public PetWindow(Preferences prefs, Func<PetSnapshot> reading, Action refresh, Action open, Action hide, Action save, Action change)
     {
@@ -128,10 +176,29 @@ sealed class PetWindow : AlphaWindow
             else { timer.Stop(); audio.Stop(); interaction.Cancel(); DismissBubble(); }
         };
         ApplySettings();
+        Microsoft.Win32.SystemEvents.DisplaySettingsChanged += DisplayChanged;
+    }
+    void DisplayChanged(object? sender, EventArgs e)
+    {
+        if (IsHandleCreated && !IsDisposed) BeginInvoke(() => { EnsureOnScreen(); save(); });
+    }
+    protected override void OnDpiChanged(DpiChangedEventArgs e)
+    {
+        base.OnDpiChanged(e);
+        if (!applyingSettings) { ApplySettings(); save(); }
     }
     double Now => clock.Elapsed.TotalSeconds;
     public void ApplySettings()
     {
+        if (applyingSettings) return;
+        applyingSettings = true;
+        try
+        {
+        var oldArea = Screen.FromRectangle(VisibleScreenBounds).WorkingArea;
+        bool right = visibleBounds.Width > 0 && Math.Abs(VisibleScreenBounds.Right - (oldArea.Right - SideGap)) <= 2;
+        bool left = visibleBounds.Width > 0 && Math.Abs(VisibleScreenBounds.Left - (oldArea.Left + SideGap)) <= 2;
+        bool bottom = visibleBounds.Height > 0 && Math.Abs(VisibleScreenBounds.Bottom - oldArea.Bottom) <= 2;
+        bool top = visibleBounds.Height > 0 && Math.Abs(VisibleScreenBounds.Top - oldArea.Top) <= 2;
         if (loadedImagePath != prefs.PetImagePath)
         {
             customImage?.Dispose(); customImage = null; loadedImagePath = prefs.PetImagePath; ResourceWarning = ""; customImageStart = Now;
@@ -143,16 +210,46 @@ sealed class PetWindow : AlphaWindow
         var bottomCenter = new Point(Left + Width / 2, Bottom);
         double factor = Math.Clamp(prefs.PetSize, 60, 180) / 100.0 * DeviceDpi / 96.0;
         Size = new((int)(240 * factor), (int)(180 * factor));
+        visibleBounds = customImage != null ? customImage.GetVisibleBounds(Size, prefs.PetAnimate) : MeasureBuiltin(Size, prefs.PetAnimate);
         if (IsHandleCreated) Location = new(bottomCenter.X - Width / 2, bottomCenter.Y - Height);
+        if (right) Left = oldArea.Right - SideGap - visibleBounds.Right;
+        else if (left) Left = oldArea.Left + SideGap - visibleBounds.Left;
+        if (bottom) Top = oldArea.Bottom - visibleBounds.Bottom;
+        else if (top) Top = oldArea.Top - visibleBounds.Top;
         TopMost = prefs.PetTopMost; bubble.TopMost = prefs.PetTopMost;
         ClampToScreen(); Present(); UpdateBubble();
+        }
+        finally { applyingSettings = false; }
+    }
+    static readonly Dictionary<(Size, bool), Rectangle> builtinBounds = new();
+    internal static Rectangle MeasureBuiltin(Size size, bool animate)
+    {
+        if (builtinBounds.TryGetValue((size, animate), out var cached)) return cached;
+        Rectangle union = Rectangle.Empty;
+        using var bitmap = new Bitmap(size.Width, size.Height, PixelFormat.Format32bppArgb);
+        using var g = Graphics.FromImage(bitmap);
+        foreach (double time in animate ? new[] { Math.PI / 4.4, 3 * Math.PI / 4.4 } : new[] { 1.0 })
+        {
+            g.Clear(Color.Transparent);
+            PetRenderer.Draw(g, new(Point.Empty, size), "薄荷海", time, false, false, 0, PointF.Empty);
+            var rect = VisiblePixels.Measure(bitmap);
+            union = union.IsEmpty ? rect : Rectangle.Union(union, rect);
+        }
+        builtinBounds[(size, animate)] = union;
+        return union;
     }
     void ClampToScreen()
     {
-        var area = Screen.FromRectangle(Bounds).WorkingArea;
-        Location = PetBounds.Constrain(Location, Size, area);
+        var area = Screen.FromRectangle(VisibleScreenBounds).WorkingArea;
+        Location = PetBounds.ConstrainVisible(Location, visibleBounds, area, SideGap);
     }
     public void EnsureOnScreen() { ClampToScreen(); Present(); UpdateBubble(); }
+    public void MoveToBottomRight()
+    {
+        var area = Screen.FromRectangle(VisibleScreenBounds).WorkingArea;
+        Location = new(area.Right - SideGap - visibleBounds.Right, area.Bottom - visibleBounds.Bottom);
+        EnsureOnScreen();
+    }
     void BuildMenu()
     {
         var menu = ContextMenuStrip!; foreach (ToolStripItem item in menu.Items.Cast<ToolStripItem>().ToArray()) item.Dispose(); menu.Items.Clear();
@@ -170,7 +267,7 @@ sealed class PetWindow : AlphaWindow
         menu.Items.Add(new ToolStripMenuItem("呼吸与眨眼动画", null, (_, _) => { prefs.PetAnimate = !prefs.PetAnimate; change(); }) { Checked = prefs.PetAnimate });
         menu.Items.Add(new ToolStripMenuItem("点击音效", null, (_, _) => { prefs.ClickSoundEnabled = !prefs.ClickSoundEnabled; change(); }) { Checked = prefs.ClickSoundEnabled });
         menu.Items.Add(new ToolStripMenuItem("保持在其他窗口上方", null, (_, _) => { prefs.PetTopMost = !prefs.PetTopMost; change(); }) { Checked = prefs.PetTopMost });
-        menu.Items.Add("回到右下角", null, (_, _) => { var area = Screen.PrimaryScreen!.WorkingArea; Location = new(area.Right - Width - 24, area.Bottom - Height - 16); save(); Present(); UpdateBubble(); });
+        menu.Items.Add("回到右下角", null, (_, _) => { MoveToBottomRight(); save(); });
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("隐藏桌宠", null, (_, _) => hide());
     }
@@ -192,7 +289,7 @@ sealed class PetWindow : AlphaWindow
             var cursor = Cursor.Position;
             var desired = new Point(windowOrigin.X + cursor.X - origin.Value.X, windowOrigin.Y + cursor.Y - origin.Value.Y);
             // Constrain before moving the layered window, including while the mouse is captured.
-            Location = PetBounds.Constrain(desired, Size, Screen.FromPoint(cursor).WorkingArea);
+            Location = PetBounds.ConstrainVisible(desired, visibleBounds, Screen.FromPoint(cursor).WorkingArea, SideGap);
             bubble.Hide(); Present();
         }
         else if (hovered && prefs.PetAnimate) Present();
@@ -233,26 +330,55 @@ sealed class PetWindow : AlphaWindow
     void UpdateBubble()
     {
         if (!Visible || !interaction.BubbleVisible(Now)) { bubble.Hide(); return; }
-        var area = Screen.FromControl(this).WorkingArea;
-        bubble.Size = new((int)(258 * DeviceDpi / 96f), (int)(150 * DeviceDpi / 96f));
-        int x = Left + Width / 2 - bubble.Width / 2;
-        int y = Top - bubble.Height + (int)(Height * .2);
-        if (y < area.Top) y = Bottom - (int)(Height * .15);
-        bubble.Location = new(Math.Clamp(x, area.Left, Math.Max(area.Left, area.Right - bubble.Width)), Math.Clamp(y, area.Top, Math.Max(area.Top, area.Bottom - bubble.Height)));
+        var area = Screen.FromRectangle(VisibleScreenBounds).WorkingArea;
+        bubble.Bounds = PetBounds.PlaceBubble(VisibleScreenBounds, new((int)(258 * DeviceDpi / 96f), (int)(150 * DeviceDpi / 96f)), area);
         if (!bubble.Visible) bubble.Show(this);
         bubble.Present();
     }
     protected override void DrawSurface(Graphics graphics)
     {
+        var state = graphics.Save();
+        double poke = Math.Max(0, 1 - (Now - pokedAt) / .65);
+        if (interaction.Dragging || poke > 0 || (hovered && customImage == null))
+        {
+            // Keep transient tilt, zoom and hearts inside both the layer and screen.
+            // Geometry comes from the cached frame union, not a scan during dragging.
+            RectangleF effects = ClientRectangle;
+            if (customImage != null)
+            {
+                var corners = new[] { new PointF(visibleBounds.Left, visibleBounds.Top), new PointF(visibleBounds.Right, visibleBounds.Top),
+                    new PointF(visibleBounds.Right, visibleBounds.Bottom), new PointF(visibleBounds.Left, visibleBounds.Bottom) };
+                using var transform = new Matrix();
+                transform.Translate(Width / 2f, Height / 2f);
+                if (interaction.Dragging) transform.Rotate(-5);
+                float zoom = 1 + (float)poke * .045f; transform.Scale(zoom, zoom);
+                transform.Translate(-Width / 2f, -Height / 2f);
+                transform.TransformPoints(corners);
+                effects = RectangleF.FromLTRB(corners.Min(p => p.X) - 1, corners.Min(p => p.Y) - 1,
+                    corners.Max(p => p.X) + 1, corners.Max(p => p.Y) + 1);
+            }
+            var area = Screen.FromRectangle(VisibleScreenBounds).WorkingArea;
+            area.Offset(-Left, -Top);
+            var viewport = Rectangle.Intersect(ClientRectangle, area);
+            if (!viewport.IsEmpty)
+            {
+                float scale = Math.Min(1, Math.Min(viewport.Width / effects.Width, viewport.Height / effects.Height));
+                float x = Math.Clamp(effects.Left, viewport.Left, Math.Max(viewport.Left, viewport.Right - effects.Width * scale));
+                float y = Math.Clamp(effects.Top, viewport.Top, Math.Max(viewport.Top, viewport.Bottom - effects.Height * scale));
+                graphics.TranslateTransform(x - effects.Left * scale, y - effects.Top * scale);
+                graphics.ScaleTransform(scale, scale);
+            }
+        }
         var mouse = PointToClient(Cursor.Position);
         var gaze = new PointF(Math.Clamp((mouse.X - Width / 2f) / Width, -.5f, .5f), Math.Clamp((mouse.Y - Height / 2f) / Height, -.5f, .5f));
-        if (customImage != null) customImage.Draw(graphics, ClientRectangle, Now - customImageStart, prefs.PetAnimate, interaction.Dragging, Math.Max(0, 1 - (Now - pokedAt) / .65));
+        if (customImage != null) customImage.Draw(graphics, ClientRectangle, Now - customImageStart, prefs.PetAnimate, interaction.Dragging, poke);
         else PetRenderer.Draw(graphics, ClientRectangle, prefs.PetTheme, prefs.PetAnimate ? Now : 1,
             hovered, interaction.Dragging, Math.Max(0, 1 - (Now - pokedAt) / .65), gaze);
+        graphics.Restore(state);
     }
     protected override void Dispose(bool disposing)
     {
-        if (disposing) { timer.Dispose(); bubble.Dispose(); tip.Dispose(); audio.Dispose(); customImage?.Dispose(); ContextMenuStrip?.Dispose(); }
+        if (disposing) { Microsoft.Win32.SystemEvents.DisplaySettingsChanged -= DisplayChanged; timer.Dispose(); bubble.Dispose(); tip.Dispose(); audio.Dispose(); customImage?.Dispose(); ContextMenuStrip?.Dispose(); }
         base.Dispose(disposing);
     }
 }

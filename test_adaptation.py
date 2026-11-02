@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 sadwind227
 """Offline adaptation tests. Uses no LLM, real HID requests, credentials or user adapter storage."""
 import copy
 import json

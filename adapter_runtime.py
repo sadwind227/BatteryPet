@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 sadwind227
 """Bounded, declarative HID battery adapters. Never executes imported code or sends reports."""
 import hashlib
 import json
@@ -117,7 +119,7 @@ def probe(data):
                     raise ValueError('设备没有返回所需报告；可能需厂商查询命令，本版不会自动重放')
                 result = decode(data, reply)
                 device_key = hashlib.sha256((iface.serial or iface.group or iface.path).encode()).hexdigest()[:16]
-                result.update(id=f'extension:{fingerprint(data)[:12]}:{device_key}', name=data['name'], status='已验证扩展 · HID', device_key=device_key,
+                result.update(id=f'extension:{fingerprint(data)[:12]}:{device_key}', name=data['name'], status='已验证扩展', connection='HID', device_key=device_key,
                               firmware=iface.version, report_hash=hashlib.sha256(reply).hexdigest())
                 return result
         except (OSError, ValueError) as error:
