@@ -15,6 +15,7 @@ static class UiChecks
         void Require(bool condition, string label) { if (!condition) throw new Exception(label); checks.Add(label); }
         try
         {
+            checks.AddRange(NativeChecks.Run(folder));
             checks.AddRange(BluetoothChecks.Run());
             checks.AddRange(EdgeChecks.Run(folder));
             var gesture = new PetInteraction();
@@ -208,7 +209,7 @@ static class UiChecks
             controls.OfType<Button>().Single(b => b.Text == "关于与版本").PerformClick(); Application.DoEvents();
             var about = Descendants(form).OfType<AboutPage>().Single();
             var directory = Descendants(about).OfType<ComboBox>().Single();
-            Require(about.Visible && directory.Items.Count == 12, "关于页列出从 0.1.0 到当前的 12 个历史版本");
+            Require(about.Visible && directory.Items.Count == 14, "关于页列出从 0.1.0 到当前的 14 个历史版本");
             directory.SelectedIndex = directory.Items.Count - 1;
             Require(Descendants(about).OfType<RichTextBox>().Single().Text.Contains("G502"), "选择早期版本显示对应更新记录");
             directory.SelectedIndex = 0;

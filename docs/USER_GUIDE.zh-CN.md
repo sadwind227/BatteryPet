@@ -1,10 +1,10 @@
-# 电量桌宠 · v0.5.0 使用说明
+﻿# 电量桌宠 · v0.5.0 使用说明
 
 Windows 10/11 的本地托盘电量工具，附带自绘小鲸鱼桌宠。支持 BLE 标准电量服务和 Windows 提供的蓝牙电量报告，范围与局限见 [蓝牙说明](BLUETOOTH.zh-CN.md)。托盘数字仍保持像素风。当前硬件适配范围为罗技 C547 接收器上的 HID++ 2.0 统一电量特性（0x1004），查询槽位 1、2。
 
 ## 启动
 
-完整解压程序包后打开 `BatteryPet.exe`。需要 .NET 8 Desktop Runtime；2.4G/HID 与适配工具另需 Python 3.10+，蓝牙读取不依赖 Python。请保留发布文件夹中的全部文件。普通启动会显示面板，并按设置显示桌宠；启用静默启动后只驻留托盘。右键桌宠或点击管理托盘图标可随时打开面板。
+完整解压程序包后打开 `BatteryPet.exe`。0.7.0-dev 自带 .NET，所有电量采集与适配流程无需 Python。请保留发布文件夹中的全部文件。普通启动会显示面板，并按设置显示桌宠；启用静默启动后只驻留托盘。右键桌宠或点击管理托盘图标可随时打开面板。
 
 - 左键点击设备托盘图标刷新电量；本阶段共用接收器统一刷新。
 - 右键图标选择数字、圆环、电池样式，打开面板或切换桌宠显隐。
@@ -51,12 +51,13 @@ Windows 10/11 的本地托盘电量工具，附带自绘小鲸鱼桌宠。支持
 ## 开发与验证
 
 ```powershell
-dotnet build -c Release
-python -m unittest test_provider.py -v
-python -m unittest test_adaptation.py -v
-python battery_bridge.py
-发布版\BatteryPet.exe --ui-check
-发布版\BatteryPet.exe --adapt-check
+dotnet publish -c Release -r win-x64 --self-contained true
+# 开发者可选：旧 Python 参考实现的离线对照测试（用户运行不需要）
+python -m unittest test_provider.py test_adaptation.py
+# 在发布后的程序目录执行
+.\BatteryPet.exe --ui-check
+.\BatteryPet.exe --adapt-check
+.\BatteryPet.exe --runtime-info
 ```
 
 模拟界面可以使用 `BatteryPet.exe --demo` 启动，明确标注为模拟数据，不代表真实硬件支持；正常模式不使用模拟电量。演示模式使用独立配置，不覆盖真实设备设置，不实际修改开机启动项。`--ui-check` 在程序目录生成渲染检查图与交互测试结果，不读鼠标、不更改系统启动项、不播放测试音频。
@@ -65,10 +66,10 @@ python battery_bridge.py
 
 - 2026-11-02：通过原始 HID++ 诊断脚本实机识别 G502 X LIGHTSPEED，读取到 86%、放电状态。
 - 自动化受限环境打开 HID 可能返回拒绝访问；从正常 Windows 桌面运行无需因此默认要求管理员权限。
-- UI 使用 WinForms，桌宠与气泡采用逐像素透明窗口；HID 采集通过 Python 进程运行，上限 25 秒；蓝牙通过 Windows 原生辅助进程运行，上限约 12 秒，两者并行并隔离错误。
+- UI 使用 WinForms，桌宠与气泡采用逐像素透明窗口；HID 采集通过 C# 原生辅助进程运行，上限 25 秒；蓝牙通过 Windows 原生辅助进程运行，上限约 12 秒，两者并行并隔离错误。
 - 客户端分析、agent 任务链路、BLE 标准读取和 Windows 蓝牙报告已加入；复杂握手协议自动生成、USB 抓包向导、复杂角色包、重命名、系统唤醒即时刷新、独立单设备刷新和完整配置迁移仍未实现。
 - 暂未完成休眠/充电/拔插/G HUB 共存长时间实机矩阵验证，不能把一次读数作为完整兼容性结论。
-- `hid_win.py` 已按 Windows 官方 API 重新编写；维护者反馈新版不再出现组件异常。自动化会话仍因错误 5 无法独立复核成功读取。
+- 历史 `hid_win.py` 已迁移为 `NativeHid.cs`；新版需独立实机复核。自动化会话仍因错误 5 无法独立复核成功读取。
 
 版本演进见 [CHANGELOG](../CHANGELOG.md)。
 

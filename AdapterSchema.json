@@ -1,0 +1,120 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "name",
+    "kind",
+    "device",
+    "report",
+    "evidence",
+    "notes"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "enum": [
+        1
+      ]
+    },
+    "name": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "hid_feature",
+        "hid_input",
+        "unsupported"
+      ]
+    },
+    "device": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "vid",
+        "pid",
+        "usage_page",
+        "usage"
+      ],
+      "properties": {
+        "vid": {
+          "type": "string"
+        },
+        "pid": {
+          "type": "string"
+        },
+        "usage_page": {
+          "type": "integer"
+        },
+        "usage": {
+          "type": "integer"
+        }
+      }
+    },
+    "report": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "length",
+        "battery_offset",
+        "scale_num",
+        "scale_den",
+        "charge_offset",
+        "charge_mask"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "length": {
+          "type": "integer"
+        },
+        "battery_offset": {
+          "type": "integer"
+        },
+        "scale_num": {
+          "type": "integer"
+        },
+        "scale_den": {
+          "type": "integer"
+        },
+        "charge_offset": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "charge_mask": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_id",
+          "reason"
+        ],
+        "properties": {
+          "source_id": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "notes": {
+      "type": "string"
+    }
+  }
+}

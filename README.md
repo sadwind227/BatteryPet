@@ -8,7 +8,7 @@ Windows tray battery monitor · Interactive desktop pet · Agent-assisted adapte
 
 [简体中文](README.zh-CN.md) · [Download](https://github.com/sadwind227/BatteryPet/releases) · [What's new](CHANGELOG.md) · [User guide](docs/USER_GUIDE.zh-CN.md)
 
-**v0.6.3-dev · Preview · Windows x64 · MIT**
+**v0.7.0-dev · Preview · Windows x64 · MIT**
 
 <img src="docs/images/pet-themes.png" alt="BatteryPet's three drawn whale themes and touch feedback" width="760">
 
@@ -18,13 +18,32 @@ BatteryPet displays supported peripheral batteries as readable pixel tray icons.
 
 ## Get started
 
-1. Download **BatteryPet-v0.6.3-dev-windows-x64-preview.zip** from [Releases](https://github.com/sadwind227/BatteryPet/releases).
-2. Install the **[.NET 8 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)** for Windows x64. For 2.4 GHz/HID and adapter tools, also install **[Python 3.10+](https://www.python.org/downloads/windows/)**, registered with Windows or available as `python` on PATH.
-3. Extract the **entire ZIP** and run `BatteryPet.exe` inside the BatteryPet folder.
+### Which download should I choose?
 
-This package uses installed runtimes. Keep its DLL, JSON files and Python scripts beside the EXE. The source ZIP is for development.
+**Choose the EXE installer for everyday use or upgrades, the portable ZIP to manage the app folder yourself, or the source ZIP to inspect and modify the code. You do not need all three.**
 
-**Upgrading:** exit BatteryPet through the tray menu, extract the new version to a new folder, then start it. Settings and imported assets are kept in `%LOCALAPPDATA%\BatteryPet`. If sign-in startup is enabled, switch it off and on from the new location to update its path.
+| File | Intended use | How to use it |
+| --- | --- | --- |
+| `BatteryPet-v0.7.0-dev-Setup.exe` | Recommended for most users and upgrades | Enter or browse for an installation location, then launch from the Start menu. Later upgrades remember the selected installation root. |
+| `BatteryPet-v0.7.0-dev-windows-x64-preview.zip` | Manual folder management or keeping multiple versions | Extract the entire archive to a writable folder and run `BatteryPet.exe`. No installer is needed. |
+| `BatteryPet-v0.7.0-dev-source.zip` | Developers and source inspection | Contains source, build scripts and documentation. Compile it yourself; this is not a ready-to-run application package. |
+
+These filenames describe the locally prepared v0.7.0-dev build. Check [Releases](https://github.com/sadwind227/BatteryPet/releases) for versions and assets actually published. GitHub's automatic **Source code (zip/tar.gz)** downloads also contain source, not the portable app.
+
+### First launch
+
+1. Use **Windows 10/11 x64** and download **either Setup.exe or windows-x64-preview.zip** from Releases.
+2. For the EXE, select an installation location. For the ZIP, extract everything and run `BatteryPet.exe`.
+3. **No separate Python or .NET installation is required.** The runtime is bundled. Keep every DLL, JSON file and subfolder beside the EXE; copying the EXE alone is insufficient.
+
+The portable ZIP needs no installation, but settings and assets remain in the current account's `%LOCALAPPDATA%\BatteryPet`. Moving the folder to another computer does not transfer them. Bundling the runtime makes downloads larger. Optional agent-assisted adaptation still requires the selected agent to be installed and signed in; normal battery monitoring needs no agent.
+
+### Upgrading
+
+- **EXE:** exit the old app through its tray menu, then run the new installer. It pre-fills the previous installation root and lets you choose another. Each upgrade uses a new version subfolder and keeps the old program for rollback. Settings, assets, enabled adapters and verification records are backed up first. Existing sign-in startup and the Start menu shortcut are updated to the new executable; disabled startup stays disabled.
+- **ZIP:** exit the old app, extract the new version to a new folder and start it. Settings and adapters remain available under the same Windows account. If sign-in startup is enabled, turn it off and on in the new app to update its executable path.
+
+Saved device adapters do not need to be regenerated. See the [installation and upgrade guide (Chinese)](docs/UPGRADE.zh-CN.md) for backup locations, rollback and compatibility limits.
 
 ## What it does
 
@@ -76,7 +95,7 @@ Current adapters support Feature reads without preparation commands and passive 
 
 ## Resource use and privacy
 
-A v0.4.2 baseline controlled test on a machine with 20 logical processors measured approximately **0.28% total CPU and 64 MiB peak working set** with the default pet animation. Tray-only idle CPU was below the sampling resolution, with a 51 MiB peak working set. These are idle samples; the v0.6.3-dev Bluetooth helper's query peak is not included. GPU usage and successful hardware-query peaks were not quantified. [Method and limits](docs/PERFORMANCE.zh-CN.md).
+A v0.4.2 baseline controlled test on a machine with 20 logical processors measured approximately **0.28% total CPU and 64 MiB peak working set** with the default pet animation. Tray-only idle CPU was below the sampling resolution, with a 51 MiB peak working set. These are idle samples; the v0.7.0-dev Bluetooth helper's query peak is not included. GPU usage and successful hardware-query peaks were not quantified. [Method and limits](docs/PERFORMANCE.zh-CN.md).
 
 Normal monitoring uses no online service. Settings, imported assets, diagnostics and adapter verification records remain under `%LOCALAPPDATA%\BatteryPet`. Review exported evidence before running an external agent.
 
@@ -90,7 +109,7 @@ python -m unittest test_provider.py test_adaptation.py
 powershell -ExecutionPolicy Bypass -File scripts/package.ps1 -Version 0.5.0
 ```
 
-The packaging script uses a reviewed file list, builds the Windows app, and creates program/source ZIPs, SHA-256 checksums and a file inventory in `artifacts/releases/v0.6.3-dev`. It excludes caches, old releases and personal settings.
+The packaging script uses a reviewed file list, builds the Windows app, and creates program/source ZIPs, SHA-256 checksums and a file inventory in `artifacts/releases/v0.7.0-dev`. It excludes caches, old releases and personal settings.
 
 Optional app checks: `--ui-check`, `--adapt-check`, `--icon-check`. `--demo` uses labeled simulated data and separate settings. [Validation notes](docs/TESTING.zh-CN.md).
 

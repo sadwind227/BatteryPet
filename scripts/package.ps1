@@ -1,6 +1,6 @@
 ﻿# SPDX-License-Identifier: MIT
 # Copyright (c) 2026 sadwind227
-param([string]$Version = '0.6.3-dev')
+param([string]$Version = '0.7.0-dev')
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path $PSScriptRoot -Parent
 $configPath = Join-Path $PSScriptRoot 'release-files.json'
@@ -40,7 +40,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Python checks failed' }
 }
 finally { Pop-Location }
-& dotnet publish (Join-Path $buildSource 'BatteryPet.csproj') -c Release -r win-x64 --no-self-contained -o $app
+& dotnet publish (Join-Path $buildSource 'BatteryPet.csproj') -c Release -r win-x64 --self-contained true ("-p:RestorePackagesPath=" + (Join-Path $projectRoot 'build/nuget-cache')) -o $app
 if ($LASTEXITCODE -ne 0) { throw 'Publish failed' }
 $pdb = Join-Path $app 'BatteryPet.pdb'
 if (Test-Path -LiteralPath $pdb) { Remove-Item -LiteralPath $pdb }
@@ -59,13 +59,29 @@ foreach ($name in @($files.program_files) + @($files.document_files)) {
     New-Item -ItemType Directory -Force -Path (Split-Path $target -Parent) | Out-Null
     Copy-Item -LiteralPath (Join-Path $app $name) -Destination $target
 }
-& dotnet (Join-Path $checkApp 'BatteryPet.dll') --ui-check
+$previousPath = $env:PATH
+$previousRoot = $env:DOTNET_ROOT
+try {
+    $env:PATH = Join-Path $env:WINDIR 'System32'
+    $env:DOTNET_ROOT = Join-Path $work 'no-global-dotnet'
+    $runtimeInfo = & (Join-Path $checkApp 'BatteryPet.exe') --runtime-info | ConvertFrom-Json
+    if (!$runtimeInfo.selfContained -or !$runtimeInfo.runtime.StartsWith($checkApp, [StringComparison]::OrdinalIgnoreCase)) { throw 'Application did not use bundled runtime' }
+    $uiProcess = Start-Process -FilePath (Join-Path $checkApp 'BatteryPet.exe') -ArgumentList '--ui-check' -WindowStyle Hidden -Wait -PassThru
+    if ($uiProcess.ExitCode -ne 0) { throw 'Application checks failed without installed dependencies' }
+    $adaptProcess = Start-Process -FilePath (Join-Path $checkApp 'BatteryPet.exe') -ArgumentList '--adapt-check' -WindowStyle Hidden -Wait -PassThru
+    if ($adaptProcess.ExitCode -ne 0) { throw 'Native adaptation helper process failed' }
+    $adaptReport = Get-Content -LiteralPath (Join-Path $checkApp 'adapt-check/结果.txt') -Encoding UTF8
+    if ($adaptReport -match 'FAIL') { throw 'Native adaptation integration check failed' }
+    $runtimeInfo | ConvertTo-Json | Set-Content (Join-Path $output 'RUNTIME_CHECKS.json') -Encoding utf8
+    $adaptReport | Set-Content (Join-Path $output 'ADAPTATION_CHECKS.txt') -Encoding utf8
+}
+finally { $env:PATH = $previousPath; $env:DOTNET_ROOT = $previousRoot }
 if ($LASTEXITCODE -ne 0) { throw 'Application check process failed' }
 $checkName = 'ui-check/' + [char]0x7ed3 + [char]0x679c + '.txt'
 $checkReport = Get-Content -LiteralPath (Join-Path $checkApp $checkName) -Encoding UTF8
 if ($checkReport -match 'FAIL') { throw ('Application checks failed: ' + ($checkReport | Select-Object -Last 1)) }
 $passed = @($checkReport | Where-Object { $_ -like 'PASS*' }).Count
-if ($passed -lt 58) { throw 'Incomplete application check report' }
+if ($passed -lt 190) { throw 'Incomplete application check report' }
 $checkReport | Set-Content -LiteralPath (Join-Path $output 'APPLICATION_CHECKS.txt') -Encoding utf8
 
 & python $audit --config $stagedConfig pack --source $source --app $app --output $output

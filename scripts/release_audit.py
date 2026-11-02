@@ -13,6 +13,7 @@ import sys
 import zipfile
 
 MANIFEST = "MANIFEST.sha256"
+RUNTIME_FILES = set()
 LOCAL_MODULES = {"hid_win", "battery_bridge", "read_logitech", "adapter_tool", "adapter_runtime"}
 
 
@@ -31,6 +32,8 @@ def category(name):
         return "Upstream .NET license/notices or their provenance record"
     if name == "BatteryPet.exe":
         return ".NET apphost; MIT and upstream notices in licenses/dotnet"
+    if name in RUNTIME_FILES:
+        return "Microsoft runtime asset; licenses/dotnet; Windows native exceptions retain vendor terms"
     return "BatteryPet MIT; separate asset and third-party notices apply"
 
 
@@ -82,8 +85,17 @@ def validate_bytes(files, config, kind):
             raise ValueError("Project version mismatch")
     else:
         deps = json.loads(files["BatteryPet.deps.json"])
-        if set(deps.get("libraries", {})) != {"BatteryPet/" + config["version"]}:
+        if set(deps.get("libraries", {})) != {"BatteryPet/" + config["version"], "runtimepack.Microsoft.NETCore.App.Runtime.win-x64/" + config["runtime_version"], "runtimepack.Microsoft.WindowsDesktop.App.Runtime.win-x64/" + config["runtime_version"]}:
             raise ValueError("Unexpected published assembly dependencies")
+    if kind == "windows":
+        if any(name.endswith(".py") for name in files):
+            raise ValueError("Python must not enter the native executable payload")
+        for name, provenance in config["runtime_assets"].items():
+            if digest(files[name]) != provenance["sha256"]:
+                raise ValueError("Bundled runtime differs from official package bytes: " + name)
+        runtime = json.loads(files["BatteryPet.runtimeconfig.json"])["runtimeOptions"]
+        if "framework" in runtime or "frameworks" in runtime or len(runtime.get("includedFrameworks", [])) != 2:
+            raise ValueError("Application is not self-contained")
     return sorted(imports)
 
 
@@ -144,6 +156,7 @@ def main():
     pack.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     config = json.loads(args.config.read_text(encoding="utf-8-sig"))
+    RUNTIME_FILES.update(config.get("runtime_assets", {}))
     if args.command == "folder":
         files = folder_files(args.root)
         imports = validate_bytes(files, config, args.kind)

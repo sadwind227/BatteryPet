@@ -55,22 +55,8 @@ static class AdaptationTool
 {
     public static async Task<JsonElement> Run(IEnumerable<string> arguments, CancellationToken cancellationToken = default)
     {
-        var start = new ProcessStartInfo(ProviderRunner.PythonPath()) { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true, StandardOutputEncoding = Encoding.UTF8, StandardErrorEncoding = Encoding.UTF8, WorkingDirectory = AppContext.BaseDirectory };
-        start.ArgumentList.Add(Path.Combine(AppContext.BaseDirectory, "adapter_tool.py"));
-        foreach (var arg in arguments) start.ArgumentList.Add(arg);
-        start.Environment["PYTHONIOENCODING"] = "utf-8";
-        using var process = new Process { StartInfo = start };
-        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken); deadline.CancelAfter(TimeSpan.FromSeconds(45));
-        process.Start(); var output = process.StandardOutput.ReadToEndAsync(); var errors = process.StandardError.ReadToEndAsync();
-        try { await process.WaitForExitAsync(deadline.Token); }
-        catch (OperationCanceledException) { if (!process.HasExited) process.Kill(true); throw new Exception("适配操作已取消或超时，未启用新适配"); }
-        string data = await output, error = await errors;
-        if (data.Length > 2_000_000) throw new Exception("适配结果超过大小限制");
-        if (string.IsNullOrWhiteSpace(data)) throw new Exception("适配组件没有返回结果：" + error[..Math.Min(error.Length, 200)]);
-        using var json = JsonDocument.Parse(data);
-        var result = json.RootElement.Clone();
-        if (result.TryGetProperty("error", out var failed)) throw new Exception(failed.GetString());
-        if (process.ExitCode != 0) throw new Exception("适配组件返回错误：" + error[..Math.Min(error.Length, 200)]);
+        var result = await NativeProcess.Json(new[] { "--adapter-tool" }.Concat(arguments), TimeSpan.FromSeconds(45), cancellationToken);
+        if (result.TryGetProperty("error", out var failed)) throw new IOException(failed.GetString());
         return result;
     }
 }
