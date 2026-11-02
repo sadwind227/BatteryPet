@@ -24,14 +24,14 @@ sealed class SettingsPage : FlowLayoutPanel
         imageLabel = Note("内置小鲸鱼", 20, 43); picture.Controls.Add(imageLabel);
         var importImage = new SeaButton("导入图片…") { Location = new(20, 75) };
         var resetImage = new SeaButton("恢复内置角色") { Location = new(156, 75) };
-        var sample = new SeaButton("使用示例角色") { Location = new(292, 75) };
+        var sample = new SeaButton("使用随附角色") { Location = new(292, 75) };
         picture.Controls.Add(importImage); picture.Controls.Add(resetImage); picture.Controls.Add(sample);
         sample.Click += (_, _) =>
         {
-            string path = Path.Combine(AppContext.BaseDirectory, "Examples", "Coopanion", "deepseek.png");
+            string path = Path.Combine(AppContext.BaseDirectory, "Examples", "CustomPet", "batterypet-pet.png");
             try
             {
-                prefs.PetImagePath = AssetStore.ImportImage(path); prefs.PetImageName = "Coopanion · DeepSeek 鲸鱼娘（静态）"; apply(); Sync();
+                prefs.PetImagePath = AssetStore.ImportImage(path); prefs.PetImageName = "BatteryPet 鲸鱼女仆（示例）"; apply(); Sync();
             }
             catch (Exception e) { MessageBox.Show(FindForm(), "示例图片不可用：" + e.Message, "电量桌宠", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
         };

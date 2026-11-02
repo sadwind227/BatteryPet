@@ -78,6 +78,6 @@ Settings, assets, last-read diagnostics and adapter verification records live un
 
 ## License and references
 
-Original BatteryPet code uses [MIT](LICENSE), with explicitly listed [third-party exceptions and pending permissions](THIRD_PARTY_NOTICES.md). The optional Coopanion image retains its upstream license and attribution. No restricted DeepSeek Balance Whale Widget artwork or sounds are bundled.
+Original BatteryPet code uses [MIT](LICENSE), with explicitly listed [third-party exceptions and pending permissions](THIRD_PARTY_NOTICES.md). The bundled sample character was supplied by the project maintainer; its separate asset terms are documented in [third-party notices](THIRD_PARTY_NOTICES.md). No Coopanion or restricted DeepSeek Balance Whale Widget artwork or sounds are bundled.
 
 References: [EZ2.4G](https://github.com/Ap0LoG1zE/EZ2.4G), [INCOTT Driver](https://github.com/oexi/incott-driver-desktop), [FerrisPulse](https://github.com/Ferris-echo/FerrisPulse), [DeepSeek Balance Whale Widget](https://github.com/MeteorNOX/DeepSeek-Balance-Whale-Widget), [Coopanion](https://github.com/Pal-AI-Lab/Coopanion). References do not imply affiliation or universal device support.

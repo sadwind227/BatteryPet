@@ -60,4 +60,4 @@ dotnet publish -c Release --no-self-contained -o artifacts/app
 
 配置、素材、读取诊断和验证记录在 `%LOCALAPPDATA%\BatteryPet`。日常监测不联网；运行外部 agent 时，其服务可能收到任务内容，发送前请查看任务包。
 
-本项目自有代码使用 [MIT](LICENSE)；第三方代码和图片有独立范围，请阅读 [第三方声明](THIRD_PARTY_NOTICES.md) 与 [设计参考](docs/DESIGN_REFERENCES.zh-CN.md)。
+本项目自有代码使用 [MIT](LICENSE)。随附的像素风鲸鱼女仆图片由项目维护者提供，图片适用范围见 [第三方声明](THIRD_PARTY_NOTICES.md)。当前版本不再包含 Coopanion 示例图；交互设计参考仍见 [设计参考](docs/DESIGN_REFERENCES.zh-CN.md)。

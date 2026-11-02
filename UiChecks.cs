@@ -140,8 +140,8 @@ static class UiChecks
             var adaptation = controls.OfType<AdaptationPage>().Single();
             Require(adaptation.Visible, "设备适配页可从主导航打开");
             Require(controls.OfType<Button>().Any(b => b.Text == "分析所选程序") && controls.OfType<Button>().Any(b => b.Text == "导出适配任务"), "适配页提供程序分析与 agent 任务导出入口");
-            string sample = Path.Combine(AppContext.BaseDirectory, "Examples", "Coopanion", "deepseek.png");
-            Require(File.Exists(sample) && File.Exists(Path.Combine(Path.GetDirectoryName(sample)!, "LICENSE.txt")), "示例角色随附原图与许可证");
+            string sample = Path.Combine(AppContext.BaseDirectory, "Examples", "CustomPet", "batterypet-pet.png");
+            Require(File.Exists(sample) && File.Exists(Path.Combine(Path.GetDirectoryName(sample)!, "SOURCE.md")), "随附示例角色图片及来源说明存在");
             prefs.PetImagePath = sample; prefs.PetSize = 100; form.SyncAppearance();
             ((Button)controls.Single(c => c is SeaButton && c.Text == "桌宠外观")).PerformClick(); Application.DoEvents();
             using (var bitmap = new Bitmap(form.Width, form.Height))
